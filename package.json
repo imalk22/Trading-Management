@@ -2,10 +2,7 @@
   "name": "trding-mgmt-new",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
