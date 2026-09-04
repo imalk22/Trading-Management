@@ -58,10 +58,12 @@ Each `components/**/*.tsx` file that renders data has a colocated `*.test.tsx`; 
 
 ```bash
 npm init -y
-npm install next@^14.2.0 react@^18.3.0 react-dom@^18.3.0
+npm install next@^15.0.0 react@^18.3.0 react-dom@^18.3.0
 npm install -D typescript@^5.5.0 @types/node@^20 @types/react@^18 @types/react-dom@^18
 npm install -D tailwindcss@^3.4.0 postcss@^8.4.0 autoprefixer@^10.4.0
 ```
+
+(Note: originally pinned to `next@^14.2.0`, but Next.js 14 rejects TypeScript config files outright — `next.config.ts` requires Next 15+. Bumped to 15 to keep the `.ts` config from Step 4. Nothing else in this plan depends on Next 14-only or Next 15-only behavior — no dynamic route `params`, no `cookies()`/`headers()` usage anywhere — so this is a version-only change.)
 
 - [ ] **Step 2: Write `.gitignore`**
 
