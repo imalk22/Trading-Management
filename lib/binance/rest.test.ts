@@ -115,6 +115,11 @@ describe("fetchLongShortRatio", () => {
     const result = await fetchLongShortRatio("BTCUSDT");
     expect(result).toEqual({ longAccount: 0.64, shortAccount: 0.36 });
   });
+
+  it("throws when Binance returns no ratio data for the symbol", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    await expect(fetchLongShortRatio("BTCUSDT")).rejects.toThrow();
+  });
 });
 
 describe("fetchOpenInterest", () => {

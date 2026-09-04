@@ -1,4 +1,11 @@
 const SPOT_BASE_URL = "https://api.binance.com";
+const FUTURES_BASE_URL = "https://fapi.binance.com";
+
+async function fetchBinanceJson<T>(url: string, label: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Binance ${label} failed: ${res.status}`);
+  return res.json();
+}
 
 export interface Ticker24hr {
   symbol: string;
@@ -24,9 +31,7 @@ export async function fetchTicker24hr(symbols: string[]): Promise<Ticker24hr[]> 
   const url = `${SPOT_BASE_URL}/api/v3/ticker/24hr?symbols=${encodeURIComponent(
     JSON.stringify(symbols)
   )}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Binance ticker24hr failed: ${res.status}`);
-  const data: RawTicker24hr[] = await res.json();
+  const data = await fetchBinanceJson<RawTicker24hr[]>(url, "ticker24hr");
   return data.map((d) => ({
     symbol: d.symbol,
     lastPrice: Number(d.lastPrice),
@@ -55,12 +60,10 @@ export async function fetchKlines(
   interval: string,
   limit = 200
 ): Promise<Kline[]> {
-  const url = `${SPOT_BASE_URL}/api/v3/klines?symbol=${encodeURIComponent(
-    symbol
-  )}&interval=${encodeURIComponent(interval)}&limit=${limit}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Binance klines failed: ${res.status}`);
-  const data: RawKline[] = await res.json();
+  const url = `${SPOT_BASE_URL}/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(
+    interval
+  )}&limit=${limit}`;
+  const data = await fetchBinanceJson<RawKline[]>(url, "klines");
   return data.map((row) => ({
     openTime: row[0],
     open: Number(row[1]),
@@ -72,8 +75,6 @@ export async function fetchKlines(
   }));
 }
 
-const FUTURES_BASE_URL = "https://fapi.binance.com";
-
 export interface FundingRate {
   symbol: string;
   lastFundingRate: number;
@@ -81,11 +82,16 @@ export interface FundingRate {
   indexPrice: number;
 }
 
+interface RawFundingRate {
+  symbol: string;
+  lastFundingRate: string;
+  markPrice: string;
+  indexPrice: string;
+}
+
 export async function fetchFundingRate(symbol: string): Promise<FundingRate> {
   const url = `${FUTURES_BASE_URL}/fapi/v1/premiumIndex?symbol=${encodeURIComponent(symbol)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Binance premiumIndex failed: ${res.status}`);
-  const data = await res.json();
+  const data = await fetchBinanceJson<RawFundingRate>(url, "premiumIndex");
   return {
     symbol: data.symbol,
     lastFundingRate: Number(data.lastFundingRate),
@@ -99,14 +105,18 @@ export interface LongShortRatio {
   shortAccount: number;
 }
 
+interface RawLongShortRatioEntry {
+  longAccount: string;
+  shortAccount: string;
+}
+
 export async function fetchLongShortRatio(symbol: string): Promise<LongShortRatio> {
   const url = `${FUTURES_BASE_URL}/futures/data/topLongShortAccountRatio?symbol=${encodeURIComponent(
     symbol
   )}&period=15m&limit=1`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Binance longShortRatio failed: ${res.status}`);
-  const data = await res.json();
+  const data = await fetchBinanceJson<RawLongShortRatioEntry[]>(url, "longShortRatio");
   const latest = data[0];
+  if (!latest) throw new Error("Binance longShortRatio failed: empty response");
   return { longAccount: Number(latest.longAccount), shortAccount: Number(latest.shortAccount) };
 }
 
@@ -115,10 +125,13 @@ export interface OpenInterest {
   openInterest: number;
 }
 
+interface RawOpenInterest {
+  symbol: string;
+  openInterest: string;
+}
+
 export async function fetchOpenInterest(symbol: string): Promise<OpenInterest> {
   const url = `${FUTURES_BASE_URL}/fapi/v1/openInterest?symbol=${encodeURIComponent(symbol)}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Binance openInterest failed: ${res.status}`);
-  const data = await res.json();
+  const data = await fetchBinanceJson<RawOpenInterest>(url, "openInterest");
   return { symbol: data.symbol, openInterest: Number(data.openInterest) };
 }
