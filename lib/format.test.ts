@@ -13,6 +13,10 @@ describe("formatPrice", () => {
   it("formats prices under 0.01 with 6 decimals", () => {
     expect(formatPrice(0.0000123)).toBe("0.000012");
   });
+
+  it("uses the magnitude, not the sign, to pick the decimal tier", () => {
+    expect(formatPrice(-80243.35)).toBe("-80,243.35");
+  });
 });
 
 describe("formatPercent", () => {
@@ -26,6 +30,10 @@ describe("formatPercent", () => {
 
   it("formats zero without a sign", () => {
     expect(formatPercent(0)).toBe("0.00%");
+  });
+
+  it("normalizes negative values that round to zero", () => {
+    expect(formatPercent(-0.001)).toBe("0.00%");
   });
 });
 
