@@ -55,7 +55,9 @@ export async function fetchKlines(
   interval: string,
   limit = 200
 ): Promise<Kline[]> {
-  const url = `${SPOT_BASE_URL}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const url = `${SPOT_BASE_URL}/api/v3/klines?symbol=${encodeURIComponent(
+    symbol
+  )}&interval=${encodeURIComponent(interval)}&limit=${limit}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Binance klines failed: ${res.status}`);
   const data: RawKline[] = await res.json();
@@ -68,4 +70,55 @@ export async function fetchKlines(
     volume: Number(row[5]),
     closeTime: row[6],
   }));
+}
+
+const FUTURES_BASE_URL = "https://fapi.binance.com";
+
+export interface FundingRate {
+  symbol: string;
+  lastFundingRate: number;
+  markPrice: number;
+  indexPrice: number;
+}
+
+export async function fetchFundingRate(symbol: string): Promise<FundingRate> {
+  const url = `${FUTURES_BASE_URL}/fapi/v1/premiumIndex?symbol=${encodeURIComponent(symbol)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Binance premiumIndex failed: ${res.status}`);
+  const data = await res.json();
+  return {
+    symbol: data.symbol,
+    lastFundingRate: Number(data.lastFundingRate),
+    markPrice: Number(data.markPrice),
+    indexPrice: Number(data.indexPrice),
+  };
+}
+
+export interface LongShortRatio {
+  longAccount: number;
+  shortAccount: number;
+}
+
+export async function fetchLongShortRatio(symbol: string): Promise<LongShortRatio> {
+  const url = `${FUTURES_BASE_URL}/futures/data/topLongShortAccountRatio?symbol=${encodeURIComponent(
+    symbol
+  )}&period=15m&limit=1`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Binance longShortRatio failed: ${res.status}`);
+  const data = await res.json();
+  const latest = data[0];
+  return { longAccount: Number(latest.longAccount), shortAccount: Number(latest.shortAccount) };
+}
+
+export interface OpenInterest {
+  symbol: string;
+  openInterest: number;
+}
+
+export async function fetchOpenInterest(symbol: string): Promise<OpenInterest> {
+  const url = `${FUTURES_BASE_URL}/fapi/v1/openInterest?symbol=${encodeURIComponent(symbol)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Binance openInterest failed: ${res.status}`);
+  const data = await res.json();
+  return { symbol: data.symbol, openInterest: Number(data.openInterest) };
 }

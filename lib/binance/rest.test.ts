@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { fetchTicker24hr, fetchKlines } from "./rest";
+import {
+  fetchTicker24hr,
+  fetchKlines,
+  fetchFundingRate,
+  fetchLongShortRatio,
+  fetchOpenInterest,
+} from "./rest";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -70,5 +76,57 @@ describe("fetchKlines", () => {
         closeTime: 1735690499999,
       },
     ]);
+  });
+});
+
+describe("fetchFundingRate", () => {
+  it("returns the last funding rate and mark/index prices for a perpetual symbol", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          symbol: "BTCUSDT",
+          lastFundingRate: "0.00010000",
+          markPrice: "80260.10000000",
+          indexPrice: "80243.35000000",
+        }),
+      })
+    );
+    const result = await fetchFundingRate("BTCUSDT");
+    expect(result).toEqual({
+      symbol: "BTCUSDT",
+      lastFundingRate: 0.0001,
+      markPrice: 80260.1,
+      indexPrice: 80243.35,
+    });
+  });
+});
+
+describe("fetchLongShortRatio", () => {
+  it("returns the latest long/short account ratio entry", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [{ longAccount: "0.64", shortAccount: "0.36" }],
+      })
+    );
+    const result = await fetchLongShortRatio("BTCUSDT");
+    expect(result).toEqual({ longAccount: 0.64, shortAccount: 0.36 });
+  });
+});
+
+describe("fetchOpenInterest", () => {
+  it("returns open interest for a symbol", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ symbol: "BTCUSDT", openInterest: "48600.123" }),
+      })
+    );
+    const result = await fetchOpenInterest("BTCUSDT");
+    expect(result).toEqual({ symbol: "BTCUSDT", openInterest: 48600.123 });
   });
 });
