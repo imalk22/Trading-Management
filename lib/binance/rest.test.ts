@@ -118,7 +118,7 @@ describe("fetchLongShortRatio", () => {
 
   it("throws when Binance returns no ratio data for the symbol", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
-    await expect(fetchLongShortRatio("BTCUSDT")).rejects.toThrow();
+    await expect(fetchLongShortRatio("BTCUSDT")).rejects.toThrow("empty response");
   });
 });
 
