@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { createChart, type IChartApi, type ISeriesApi, type UTCTimestamp } from "lightweight-charts";
-import { fetchKlines, type Kline } from "@/lib/binance/rest";
+import { fetchKlines } from "@/lib/binance/rest";
 import { useBinanceKline } from "@/lib/binance/ws";
 
 export interface CandlestickChartProps {
@@ -10,7 +10,15 @@ export interface CandlestickChartProps {
   interval: string;
 }
 
-function toChartPoint(k: Kline) {
+interface ChartPointSource {
+  openTime: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+function toChartPoint(k: ChartPointSource) {
   return {
     time: Math.floor(k.openTime / 1000) as UTCTimestamp,
     open: k.open,
@@ -27,6 +35,7 @@ export function CandlestickChart({ symbol, interval }: CandlestickChartProps) {
 
   useEffect(() => {
     if (!containerRef.current) return;
+    let cancelled = false;
     const chart: IChartApi = createChart(containerRef.current, {
       height: 420,
       layout: { background: { color: "transparent" } },
@@ -34,11 +43,17 @@ export function CandlestickChart({ symbol, interval }: CandlestickChartProps) {
     const series = chart.addCandlestickSeries();
     seriesRef.current = series;
 
-    fetchKlines(symbol, interval, 200).then((klines) => {
-      series.setData(klines.map(toChartPoint));
-    });
+    fetchKlines(symbol, interval, 200)
+      .then((klines) => {
+        if (cancelled) return;
+        series.setData(klines.map(toChartPoint));
+      })
+      .catch((error) => {
+        console.error("Failed to load candlestick data", error);
+      });
 
     return () => {
+      cancelled = true;
       chart.remove();
       seriesRef.current = null;
     };
@@ -46,13 +61,7 @@ export function CandlestickChart({ symbol, interval }: CandlestickChartProps) {
 
   useEffect(() => {
     if (!liveKline || !seriesRef.current) return;
-    seriesRef.current.update({
-      time: Math.floor(liveKline.openTime / 1000),
-      open: liveKline.open,
-      high: liveKline.high,
-      low: liveKline.low,
-      close: liveKline.close,
-    } as never);
+    seriesRef.current.update(toChartPoint(liveKline));
   }, [liveKline]);
 
   return <div ref={containerRef} data-testid="candlestick-chart" />;
