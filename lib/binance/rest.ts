@@ -149,6 +149,7 @@ export async function fetchOpenInterestChange(symbol: string): Promise<OpenInter
     symbol
   )}&period=5m&limit=13`;
   const data = await fetchBinanceJson<RawOpenInterestHistEntry[]>(url, "openInterestHist");
+  if (data.length === 0) throw new Error("Binance openInterestHist failed: empty response");
   const oldest = Number(data[0].sumOpenInterest);
   const newest = Number(data[data.length - 1].sumOpenInterest);
   return { changePercent: ((newest - oldest) / oldest) * 100 };

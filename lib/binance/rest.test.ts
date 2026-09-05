@@ -153,4 +153,9 @@ describe("fetchOpenInterestChange", () => {
     const result = await fetchOpenInterestChange("BTCUSDT");
     expect(result.changePercent).toBeCloseTo(1.25, 2);
   });
+
+  it("throws when Binance returns no open-interest history for the symbol", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => [] }));
+    await expect(fetchOpenInterestChange("BTCUSDT")).rejects.toThrow("empty response");
+  });
 });

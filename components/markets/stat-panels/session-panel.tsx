@@ -80,45 +80,37 @@ export function SessionPanel() {
       <CardContent className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <p className="text-xs text-muted-foreground">Long / Short</p>
-          <p className="font-semibold">
-            {ratioLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : longPercent === null ? (
-              "—"
-            ) : (
-              `${longPercent} / ${100 - longPercent}`
-            )}
-          </p>
+          {ratioLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">
+              {longPercent === null ? "—" : `${longPercent} / ${100 - longPercent}`}
+            </p>
+          )}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">OI Change 1h</p>
-          <p className="font-semibold">
-            {oiLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : oiChange ? (
-              formatPercent(oiChange.changePercent)
-            ) : (
-              "—"
-            )}
-          </p>
+          {oiLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">{oiChange ? formatPercent(oiChange.changePercent) : "—"}</p>
+          )}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Basis</p>
-          <p className="font-semibold">
-            {fundingLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : basisPercent === null ? (
-              "—"
-            ) : (
-              formatPercent(basisPercent)
-            )}
-          </p>
+          {fundingLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">{basisPercent === null ? "—" : formatPercent(basisPercent)}</p>
+          )}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Spread</p>
-          <p className="font-semibold">
-            {spreadBps === null ? <Skeleton className="h-4 w-16" /> : `${spreadBps.toFixed(1)} bps`}
-          </p>
+          {spreadBps === null ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">{spreadBps.toFixed(1)} bps</p>
+          )}
         </div>
       </CardContent>
     </Card>
