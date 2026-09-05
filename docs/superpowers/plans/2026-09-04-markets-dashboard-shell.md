@@ -3657,15 +3657,18 @@ export interface OpenInterestChange {
 }
 
 export async function fetchOpenInterestChange(symbol: string): Promise<OpenInterestChange> {
-  const url = `${FUTURES_BASE_URL}/futures/data/openInterestHist?symbol=${symbol}&period=5m&limit=13`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Binance openInterestHist failed: ${res.status}`);
-  const data: { sumOpenInterest: string }[] = await res.json();
+  const url = `${FUTURES_BASE_URL}/futures/data/openInterestHist?symbol=${encodeURIComponent(
+    symbol
+  )}&period=5m&limit=13`;
+  const data = await fetchBinanceJson<{ sumOpenInterest: string }[]>(url, "openInterestHist");
+  if (data.length === 0) throw new Error("Binance openInterestHist failed: empty response");
   const oldest = Number(data[0].sumOpenInterest);
   const newest = Number(data[data.length - 1].sumOpenInterest);
   return { changePercent: ((newest - oldest) / oldest) * 100 };
 }
 ```
+
+(Note: implemented via the file's existing shared `fetchBinanceJson<T>` helper rather than a raw `fetch` call, for consistency with the other 5 fetchers already in this file — same behavior, same error-message format. Also added an empty-response guard matching `fetchLongShortRatio`'s sibling pattern, found missing in code review: without it, Binance ever returning `[]` would throw an unhelpful raw `TypeError` instead of a clear labeled error.)
 
 - [ ] **Step 4: Run to verify all rest.ts tests pass**
 
@@ -3821,45 +3824,37 @@ export function SessionPanel() {
       <CardContent className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <p className="text-xs text-muted-foreground">Long / Short</p>
-          <p className="font-semibold">
-            {ratioLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : longPercent === null ? (
-              "—"
-            ) : (
-              `${longPercent} / ${100 - longPercent}`
-            )}
-          </p>
+          {ratioLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">
+              {longPercent === null ? "—" : `${longPercent} / ${100 - longPercent}`}
+            </p>
+          )}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">OI Change 1h</p>
-          <p className="font-semibold">
-            {oiLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : oiChange ? (
-              formatPercent(oiChange.changePercent)
-            ) : (
-              "—"
-            )}
-          </p>
+          {oiLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">{oiChange ? formatPercent(oiChange.changePercent) : "—"}</p>
+          )}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Basis</p>
-          <p className="font-semibold">
-            {fundingLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : basisPercent === null ? (
-              "—"
-            ) : (
-              formatPercent(basisPercent)
-            )}
-          </p>
+          {fundingLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">{basisPercent === null ? "—" : formatPercent(basisPercent)}</p>
+          )}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Spread</p>
-          <p className="font-semibold">
-            {spreadBps === null ? <Skeleton className="h-4 w-16" /> : `${spreadBps.toFixed(1)} bps`}
-          </p>
+          {spreadBps === null ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">{spreadBps.toFixed(1)} bps</p>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -3867,7 +3862,7 @@ export function SessionPanel() {
 }
 ```
 
-(Note: originally each field showed `<Skeleton>` indefinitely whenever its value was `null`, without distinguishing "still loading" from "settled with no data" — so a genuine fetch failure with no cached data looked identical to a perpetual loading spinner, forever, rather than a clear failure state. This is the same class of bug found and fixed in Tasks 19/20 [`FearGreedPanel`, `SentimentPanel`], just manifesting as an infinite skeleton instead of a blank card or a mislabeled message. Fixed by destructuring each query's own `isLoading` and using it to choose between `Skeleton` (genuinely loading), `"—"` (settled, no data), and the real value — the `Spread` field is left as-is since it's driven by `useBinanceDepth`, a WebSocket hook with no error/loaded distinction of its own; "still connecting" is the same accepted indefinite state `OrderBookPanel` already uses.)
+(Note: originally each field showed `<Skeleton>` indefinitely whenever its value was `null`, without distinguishing "still loading" from "settled with no data" — so a genuine fetch failure with no cached data looked identical to a perpetual loading spinner, forever, rather than a clear failure state. This is the same class of bug found and fixed in Tasks 19/20 [`FearGreedPanel`, `SentimentPanel`], just manifesting as an infinite skeleton instead of a blank card or a mislabeled message. Fixed by destructuring each query's own `isLoading` and using it to choose between `Skeleton` (genuinely loading), `"—"` (settled, no data), and the real value — the `Spread` field is left driven by `useBinanceDepth`, a WebSocket hook with no error/loaded distinction of its own; "still connecting" is the same accepted indefinite state `OrderBookPanel` already uses. A second round of code review then caught that nesting `<Skeleton>` — a `<div>` — inside a `<p>` is invalid HTML, verified by an actual `validateDOMNesting` console warning during the test run, and a real hydration-mismatch risk in a Next.js app since the browser's HTML parser force-closes the `<p>` early. Fixed by moving the `Skeleton`/value branch outside the `<p>` entirely for all four fields, so `Skeleton` and its sibling `<p>` are never nested.)
 
 - [ ] **Step 8: Run to verify it passes**
 
