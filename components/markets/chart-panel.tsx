@@ -12,6 +12,18 @@ import { CandlestickChart } from "./candlestick-chart";
 const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D"] as const;
 type Timeframe = (typeof TIMEFRAMES)[number];
 
+// Binance's kline REST/WS interval parameter is lowercase ("1d", not "1D").
+// "1D" is kept as the button label because that's the conventional way
+// trading UIs display the daily timeframe.
+const BINANCE_INTERVAL: Record<Timeframe, string> = {
+  "1m": "1m",
+  "5m": "5m",
+  "15m": "15m",
+  "1h": "1h",
+  "4h": "4h",
+  "1D": "1d",
+};
+
 export function ChartPanel() {
   const selectedSymbol = useSymbolStore((s) => s.selectedSymbol);
   const symbolInfo = CURATED_SYMBOLS.find((s) => s.symbol === selectedSymbol)!;
@@ -50,7 +62,7 @@ export function ChartPanel() {
         </div>
         <Tabs value={timeframe} options={TIMEFRAMES} onChange={setTimeframe} />
       </div>
-      <CandlestickChart symbol={selectedSymbol} interval={timeframe} />
+      <CandlestickChart symbol={selectedSymbol} interval={BINANCE_INTERVAL[timeframe]} />
     </div>
   );
 }

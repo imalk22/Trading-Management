@@ -51,4 +51,11 @@ describe("ChartPanel", () => {
     fireEvent.click(screen.getByRole("tab", { name: "1h" }));
     expect(screen.getByTestId("chart-stub")).toHaveTextContent("BTCUSDT-1h");
   });
+
+  it("maps the 1D tab label to Binance's lowercase daily interval", async () => {
+    renderWithQueryClient(<ChartPanel />);
+    await waitFor(() => expect(screen.getByTestId("chart-stub")).toHaveTextContent("BTCUSDT-15m"));
+    fireEvent.click(screen.getByRole("tab", { name: "1D" }));
+    expect(screen.getByTestId("chart-stub")).toHaveTextContent("BTCUSDT-1d");
+  });
 });
