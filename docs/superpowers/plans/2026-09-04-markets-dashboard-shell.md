@@ -3477,6 +3477,8 @@ git commit -m "feat: add Sentiment stat panel"
 
 ### Task 21: Leaders panel
 
+Deliberate scope note: the design spec described this panel as "top gainers/losers," but this task shows only the top 3 gainers, descending, with no losers section. Code review flagged this as worth confirming against the actual bitloom.online reference before treating it as final — left as a simplification here rather than blocking Phase 1 completion on a UX-scope decision. Revisit if/when the dashboard's visual polish gets a dedicated pass.
+
 **Files:**
 - Create: `components/markets/stat-panels/leaders-panel.tsx`, `components/markets/stat-panels/leaders-panel.test.tsx`
 
