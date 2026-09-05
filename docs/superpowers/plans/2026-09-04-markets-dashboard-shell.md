@@ -3904,6 +3904,16 @@ describe("GlobalPanel", () => {
     expect(screen.getByText("+54.20%")).toBeInTheDocument();
     expect(screen.getByText("48,600.12")).toBeInTheDocument();
   });
+
+  it("shows placeholders instead of an infinite skeleton when fetches fail with no cached data", async () => {
+    useSymbolStore.setState({ selectedSymbol: "BTCUSDT" });
+    vi.spyOn(coingecko, "fetchGlobalStats").mockRejectedValue(new Error("network down"));
+    vi.spyOn(rest, "fetchOpenInterest").mockRejectedValue(new Error("network down"));
+
+    renderWithQueryClient(<GlobalPanel />);
+
+    await waitFor(() => expect(screen.getAllByText("—")).toHaveLength(4));
+  });
 });
 ```
 
@@ -3929,13 +3939,18 @@ export function GlobalPanel() {
   const {
     data: globalStats,
     isStale: globalStale,
+    isLoading: globalLoading,
   } = useStaleAwareQuery({
     queryKey: ["globalStats"],
     queryFn: fetchGlobalStats,
     refetchInterval: 60_000,
   });
 
-  const { data: openInterest, isStale: oiStale } = useStaleAwareQuery({
+  const {
+    data: openInterest,
+    isStale: oiStale,
+    isLoading: oiLoading,
+  } = useStaleAwareQuery({
     queryKey: ["openInterest", selectedSymbol],
     queryFn: () => fetchOpenInterest(symbolInfo.futuresSymbol as string),
     enabled: symbolInfo.futuresSymbol !== null,
@@ -3952,19 +3967,37 @@ export function GlobalPanel() {
         <div>
           <p className="text-xs text-muted-foreground">Market Cap</p>
           <p className="font-semibold">
-            {globalStats ? `$${formatCompact(globalStats.totalMarketCapUsd)}` : <Skeleton className="h-4 w-16" />}
+            {globalLoading ? (
+              <Skeleton className="h-4 w-16" />
+            ) : globalStats ? (
+              `$${formatCompact(globalStats.totalMarketCapUsd)}`
+            ) : (
+              "—"
+            )}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">24h Volume</p>
           <p className="font-semibold">
-            {globalStats ? `$${formatCompact(globalStats.totalVolumeUsd)}` : <Skeleton className="h-4 w-16" />}
+            {globalLoading ? (
+              <Skeleton className="h-4 w-16" />
+            ) : globalStats ? (
+              `$${formatCompact(globalStats.totalVolumeUsd)}`
+            ) : (
+              "—"
+            )}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">BTC Dominance</p>
           <p className="font-semibold">
-            {globalStats ? formatPercent(globalStats.btcDominance) : <Skeleton className="h-4 w-16" />}
+            {globalLoading ? (
+              <Skeleton className="h-4 w-16" />
+            ) : globalStats ? (
+              formatPercent(globalStats.btcDominance)
+            ) : (
+              "—"
+            )}
           </p>
         </div>
         <div>
@@ -3974,10 +4007,12 @@ export function GlobalPanel() {
           <p className="font-semibold">
             {symbolInfo.futuresSymbol === null ? (
               "—"
+            ) : oiLoading ? (
+              <Skeleton className="h-4 w-16" />
             ) : openInterest ? (
               openInterest.openInterest.toLocaleString()
             ) : (
-              <Skeleton className="h-4 w-16" />
+              "—"
             )}
           </p>
         </div>
@@ -3986,6 +4021,8 @@ export function GlobalPanel() {
   );
 }
 ```
+
+(Note: same infinite-skeleton-on-error fix as Task 22 — each field now checks its own `isLoading` before falling back to a `Skeleton`, so a settled fetch failure with no cached data shows `"—"` instead of spinning forever.)
 
 - [ ] **Step 3: Run to verify it passes**
 
