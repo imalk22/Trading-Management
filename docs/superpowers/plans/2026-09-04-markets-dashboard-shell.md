@@ -1572,12 +1572,15 @@ export function createReconnectingStream(options: ReconnectingStreamOptions) {
   let closedByCaller = false;
 
   function connect() {
+    if (closedByCaller) return;
     socket = new WebSocketImpl(options.url);
     socket.onmessage = (event: MessageEvent) => {
-      options.onMessage(JSON.parse(event.data as string));
-    };
-    socket.onopen = () => {
       attempt = 0;
+      try {
+        options.onMessage(JSON.parse(event.data as string));
+      } catch {
+        // Ignore malformed frames rather than crashing the socket handler.
+      }
     };
     socket.onclose = () => {
       if (closedByCaller) return;
@@ -1595,11 +1598,17 @@ export function createReconnectingStream(options: ReconnectingStreamOptions) {
   return {
     close() {
       closedByCaller = true;
+      if (socket) {
+        socket.onmessage = null;
+        socket.onclose = null;
+      }
       socket?.close();
     },
   };
 }
 ```
+
+(Note: the original version reset `attempt` in `onopen` and had no guard in `connect()` against a stream already closed by the caller. That combination caused two real bugs, caught in code review: (1) a pending reconnect `setTimeout` fired after `close()`, leaking a zombie WebSocket connection nothing was listening for; (2) if a socket opened and then immediately closed — exactly what happens with an invalid stream name, see the `useBinanceDepth` fix below — `attempt` reset to 0 before `onclose` incremented it, defeating backoff entirely against a "connects then instantly rejects" endpoint. Fixed by guarding `connect()` and moving the reset to `onmessage`, which only fires once the connection has proven it can actually deliver data.)
 
 - [ ] **Step 8: Run to verify all tests pass**
 
@@ -1619,6 +1628,7 @@ function useBinanceStream<T>(streamPath: string, parse: (msg: any) => T): T | nu
   const [data, setData] = useState<T | null>(null);
 
   useEffect(() => {
+    setData(null);
     const stream = createReconnectingStream({
       url: `wss://stream.binance.com:9443/ws/${streamPath}`,
       onMessage: (msg) => setData(parse(msg)),
@@ -1675,7 +1685,7 @@ export interface LiveDepth {
   asks: DepthLevel[];
 }
 
-export function useBinanceDepth(symbol: string, levels = 15): LiveDepth | null {
+export function useBinanceDepth(symbol: string, levels = 20): LiveDepth | null {
   return useBinanceStream<LiveDepth>(`${symbol.toLowerCase()}@depth${levels}@1000ms`, (msg) => ({
     bids: msg.bids.map(([price, quantity]: [string, string]) => ({
       price: Number(price),
@@ -1687,7 +1697,11 @@ export function useBinanceDepth(symbol: string, levels = 15): LiveDepth | null {
     })),
   }));
 }
+```
 
+(Note: originally defaulted to `levels = 15`, but Binance's Partial Book Depth Stream only supports levels 5, 10, or 20 — `@depth15@1000ms` isn't a valid stream name, so the order book panel would never have received data. Fixed to `20`, an actual supported value.)
+
+```ts
 export interface LiveTrade {
   price: number;
   quantity: number;
