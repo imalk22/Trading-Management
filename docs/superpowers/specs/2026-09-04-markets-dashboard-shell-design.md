@@ -139,3 +139,15 @@ real, tradable equivalent to the reference screenshot's gold pair).
   rather than a rushed fix folded into a composition task. Revisit if/when
   connection count becomes a real problem or another panel needs to share
   a stream.
+- Found via real-browser testing (Task 25), not the mocked unit suite:
+  Binance's kline interval parameter is case-sensitive in a way that
+  matters — `"1m"` (minute) and `"1M"` (month) are both valid, distinct
+  values — so it can never be safely normalized with a blanket
+  `.toLowerCase()`/`.toUpperCase()`. The dashboard's daily chart tab
+  originally sent the UI label `"1D"` straight through and Binance
+  silently rejected it. Fixed by exporting a `BinanceInterval` literal
+  union from `lib/binance/rest.ts` and typing `fetchKlines`/
+  `useBinanceKline`'s `interval` parameter with it, so any future call
+  site gets a compile-time error instead of a runtime rejection the
+  mocked tests can't see. Keep using `BinanceInterval` (not a bare
+  `string`) for any new code that touches klines.

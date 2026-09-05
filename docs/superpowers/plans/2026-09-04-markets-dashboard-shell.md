@@ -1040,9 +1040,18 @@ export interface Kline {
 
 type RawKline = [number, string, string, string, string, string, number, ...unknown[]];
 
+// Binance's interval strings are case-sensitive in a way that matters:
+// "1m" is one minute, "1M" is one month — they're both valid, distinct
+// values, so this must stay a literal union, never normalized with
+// .toLowerCase()/.toUpperCase() at any call site.
+export type BinanceInterval =
+  | "1m" | "3m" | "5m" | "15m" | "30m"
+  | "1h" | "2h" | "4h" | "6h" | "8h" | "12h"
+  | "1d" | "3d" | "1w" | "1M";
+
 export async function fetchKlines(
   symbol: string,
-  interval: string,
+  interval: BinanceInterval,
   limit = 200
 ): Promise<Kline[]> {
   const url = `${SPOT_BASE_URL}/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
@@ -1623,6 +1632,7 @@ Append to `lib/binance/ws.ts` (not unit tested — see the task header for why):
 "use client";
 
 import { useEffect, useState } from "react";
+import type { BinanceInterval } from "@/lib/binance/rest";
 
 function useBinanceStream<T>(streamPath: string, parse: (msg: any) => T): T | null {
   const [data, setData] = useState<T | null>(null);
@@ -1663,7 +1673,7 @@ export interface LiveKline {
   isFinal: boolean;
 }
 
-export function useBinanceKline(symbol: string, interval: string): LiveKline | null {
+export function useBinanceKline(symbol: string, interval: BinanceInterval): LiveKline | null {
   return useBinanceStream<LiveKline>(`${symbol.toLowerCase()}@kline_${interval}`, (msg) => ({
     openTime: msg.k.t,
     open: Number(msg.k.o),
@@ -2787,6 +2797,8 @@ Expected: FAIL — cannot find module `./candlestick-chart`
 
 - [ ] **Step 4: Implement `components/markets/candlestick-chart.tsx`**
 
+(Note: this block is the original version. Two later fixes supersede it and are not re-transcribed here in full — see git history: commit `99f16f2` "fix: guard against stale chart-series closure, handle fetch errors, tighten cast" replaced `toChartPoint`'s parameter type with a structural `ChartPointSource` interface and added a `cancelled` guard + `.catch()` around the klines fetch; commit `a48403b`'s follow-up types `CandlestickChartProps.interval` and `toChartPoint`'s `openTime` source as `BinanceInterval`/using the shared interval type below instead of a bare `string`, so a caller can no longer pass an interval string Binance doesn't actually accept. Read `components/markets/candlestick-chart.tsx` directly for the current, authoritative version.)
+
 ```tsx
 "use client";
 
@@ -2927,7 +2939,7 @@ describe("ChartPanel", () => {
 
 import { useState } from "react";
 import { useStaleAwareQuery } from "@/lib/query/use-stale-query";
-import { fetchTicker24hr, fetchFundingRate } from "@/lib/binance/rest";
+import { fetchTicker24hr, fetchFundingRate, type BinanceInterval } from "@/lib/binance/rest";
 import { useSymbolStore } from "@/lib/store/symbol-store";
 import { CURATED_SYMBOLS } from "@/lib/symbols";
 import { formatPrice, formatPercent } from "@/lib/format";
@@ -2940,7 +2952,7 @@ type Timeframe = (typeof TIMEFRAMES)[number];
 // Binance's kline REST/WS interval parameter is lowercase ("1d", not "1D").
 // "1D" is kept as the button label because that's the conventional way
 // trading UIs display the daily timeframe.
-const BINANCE_INTERVAL: Record<Timeframe, string> = {
+const BINANCE_INTERVAL: Record<Timeframe, BinanceInterval> = {
   "1m": "1m",
   "5m": "5m",
   "15m": "15m",
@@ -2993,7 +3005,9 @@ export function ChartPanel() {
 }
 ```
 
-(Note: found via Task 25's real-browser verification, not by the mocked unit tests — Binance's actual kline REST/WS interval parameter rejects `"1D"` (only lowercase `"1d"` is valid), which surfaced as a CORS-looking `net::ERR_FAILED` in the browser network tab when clicking the daily tab, since Binance's error response for a malformed interval doesn't carry CORS headers. Every unit test mocks `fetchKlines`/`useBinanceKline` directly, so none of them ever sent a real interval string to Binance and none could have caught this. Fixed with a `BINANCE_INTERVAL` lookup so the UI keeps the conventional `"1D"` button label while the actual API/stream calls use `"1d"`.)
+(Note: found via Task 25's real-browser verification, not by the mocked unit tests — Binance's actual kline REST/WS interval parameter rejects `"1D"` (only lowercase `"1d"` is valid), which surfaced as a CORS-looking `net::ERR_FAILED` in the browser network tab when clicking the daily tab, since Binance's error response for a malformed interval doesn't carry CORS headers. Every unit test mocks `fetchKlines`/`useBinanceKline` directly, so none of them ever sent a real interval string to Binance and none could have caught this. Fixed with a `BINANCE_INTERVAL` lookup so the UI keeps the conventional `"1D"` button label while the actual API/stream calls use `"1d"`.
+
+Code review on this fix (commit `a48403b`) then asked whether the fix belonged at the right altitude: `fetchKlines` and `useBinanceKline` both still typed `interval` as a bare `string`, so any future call site could reintroduce the exact same bug, invisibly, since the mocked test suite can't see real Binance rejections. The "obvious" more-general fix — normalizing casing at that lower boundary — would itself have been wrong: Binance's interval enum is case-sensitive in a way that matters (`"1m"` is one minute, `"1M"` is one month; both are valid, distinct values), so a blanket `.toLowerCase()` would silently turn a future monthly-candle request into a minute-candle request instead of failing loudly. The actual fix, added as a follow-up: a `BinanceInterval` literal-union type exported from `lib/binance/rest.ts` and used as the `interval` parameter type on both `fetchKlines` and `useBinanceKline`, so a mismatched call site is now a compile-time TypeScript error rather than a hopeful runtime string. This finding is also recorded in the design spec's "Open questions / risks" section.)
 
 - [ ] **Step 8: Run to verify it passes**
 
