@@ -3537,6 +3537,14 @@ describe("LeadersPanel", () => {
     expect(screen.getByText("ETH")).toBeInTheDocument();
     expect(screen.queryByText("DOT")).not.toBeInTheDocument();
   });
+
+  it("shows a placeholder instead of an empty card when there is no ticker data", async () => {
+    vi.spyOn(rest, "fetchTicker24hr").mockRejectedValue(new Error("network down"));
+
+    renderWithQueryClient(<LeadersPanel />);
+
+    await waitFor(() => expect(screen.getByText("No data available")).toBeInTheDocument());
+  });
 });
 ```
 
@@ -3565,6 +3573,8 @@ export function LeadersPanel() {
       <CardContent className="flex flex-col gap-1">
         {isLoading ? (
           <Skeleton className="h-16 w-full" />
+        ) : leaders.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No data available</p>
         ) : (
           leaders.map((ticker) => (
             <div key={ticker.symbol} className="flex items-center justify-between text-sm">
@@ -3580,6 +3590,8 @@ export function LeadersPanel() {
   );
 }
 ```
+
+(Note: added the `leaders.length === 0` branch so a settled fetch failure with no cached data shows an explicit message instead of a silently empty card body — the same class of gap as Tasks 19/20/22/23, here manifesting as "nothing rendered" rather than a blank value or an infinite skeleton, since `isLoading` was already correctly used to gate the skeleton.)
 
 - [ ] **Step 3: Run to verify it passes**
 
