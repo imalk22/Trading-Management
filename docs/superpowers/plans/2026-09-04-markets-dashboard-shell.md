@@ -1703,6 +1703,7 @@ export function useBinanceDepth(symbol: string, levels = 20): LiveDepth | null {
 
 ```ts
 export interface LiveTrade {
+  id: number;
   price: number;
   quantity: number;
   time: number;
@@ -1719,7 +1720,13 @@ export function useBinanceTrades(symbol: string, maxTrades = 20): LiveTrade[] {
       onMessage: (msg: any) => {
         setTrades((prev) =>
           [
-            { price: Number(msg.p), quantity: Number(msg.q), time: msg.T, isBuyerMaker: msg.m },
+            {
+              id: msg.t,
+              price: Number(msg.p),
+              quantity: Number(msg.q),
+              time: msg.T,
+              isBuyerMaker: msg.m,
+            },
             ...prev,
           ].slice(0, maxTrades)
         );
@@ -1731,6 +1738,8 @@ export function useBinanceTrades(symbol: string, maxTrades = 20): LiveTrade[] {
   return trades;
 }
 ```
+
+(Note: originally keyed nothing beyond `time`, a millisecond timestamp. Code review on Task 17 — the panel consuming this hook — found Binance's real trade-stream message carries a unique trade ID in field `t` that was being discarded, and that same-millisecond duplicate trades are a routine occurrence during order-sweep fills on a liquid symbol, not a rare edge case. Added `id` so Task 17's panel can key rows uniquely instead of by timestamp.)
 
 - [ ] **Step 10: Run the full test file once more to confirm nothing broke**
 
@@ -3084,8 +3093,8 @@ import { DEFAULT_SYMBOL } from "@/lib/symbols";
 
 vi.mock("@/lib/binance/ws", () => ({
   useBinanceTrades: () => [
-    { price: 80243.35, quantity: 0.9424, time: 1735689600000, isBuyerMaker: false },
-    { price: 80230.03, quantity: 0.3247, time: 1735689590000, isBuyerMaker: true },
+    { id: 2, price: 80243.35, quantity: 0.9424, time: 1735689600000, isBuyerMaker: false },
+    { id: 1, price: 80230.03, quantity: 0.3247, time: 1735689590000, isBuyerMaker: true },
   ],
 }));
 
@@ -3126,7 +3135,7 @@ export function RecentTradesPanel() {
       </div>
       {trades.length === 0 && <p className="text-xs text-muted-foreground">Connecting…</p>}
       {trades.map((trade) => (
-        <div key={trade.time} className="grid grid-cols-3 text-xs">
+        <div key={trade.id} className="grid grid-cols-3 text-xs">
           <span className={cn(trade.isBuyerMaker ? "text-down" : "text-up")}>
             {formatPrice(trade.price)}
           </span>
