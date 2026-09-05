@@ -1833,6 +1833,32 @@ describe("useStaleAwareQuery", () => {
     await waitFor(() => expect(result.current.isStale).toBe(true));
     expect(result.current.data).toBe("fresh");
   });
+
+  it("does not carry stale data across a query key change", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    let symbol = "BTC";
+    const queryFn = vi.fn(async () => (symbol === "BTC" ? "btc-data" : "eth-data"));
+
+    const { result, rerender } = renderHook(
+      () => useStaleAwareQuery({ queryKey: ["symbol", symbol], queryFn }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.data).toBe("btc-data"));
+
+    symbol = "ETH";
+    rerender();
+
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isStale).toBe(false);
+    expect(result.current.isLoading).toBe(true);
+
+    await waitFor(() => expect(result.current.data).toBe("eth-data"));
+  });
 });
 ```
 
@@ -1855,23 +1881,32 @@ export interface StaleAwareResult<T> {
 
 export function useStaleAwareQuery<T>(options: UseQueryOptions<T>): StaleAwareResult<T> {
   const query = useQuery(options);
-  const lastGoodData = useRef<T | undefined>(undefined);
+  const serializedKey = JSON.stringify(options.queryKey);
+  const lastGoodData = useRef<{ key: string; data: T } | undefined>(undefined);
 
   if (query.data !== undefined) {
-    lastGoodData.current = query.data;
+    lastGoodData.current = { key: serializedKey, data: query.data };
   }
 
-  const data = query.data !== undefined ? query.data : lastGoodData.current;
-  const isStale = query.isError && lastGoodData.current !== undefined;
+  const hasMatchingCachedData = lastGoodData.current?.key === serializedKey;
+  const data =
+    query.data !== undefined
+      ? query.data
+      : hasMatchingCachedData
+        ? lastGoodData.current!.data
+        : undefined;
+  const isStale = query.isError && hasMatchingCachedData;
 
-  return { data, isStale, isLoading: query.isLoading && lastGoodData.current === undefined };
+  return { data, isStale, isLoading: query.isLoading && !hasMatchingCachedData };
 }
 ```
+
+(Note: the original version kept `lastGoodData` in a bare `useRef<T>`, with no record of which query key it belonged to. TanStack Query itself already preserves `data` across a failed same-key refetch — verified empirically during implementation — so the ref only actually diverges from `query.data` in one case: a query-key change, e.g. switching the selected trading symbol. In that case the un-keyed ref would keep serving the *previous* symbol's data, misreported as valid/fresh, instead of a loading state — a real bug given ~10 later panels key queries by the selected symbol. Fixed by tagging the cached value with the key it came from and only serving it as a fallback when the key still matches.)
 
 - [ ] **Step 6: Run to verify it passes**
 
 Run: `npx vitest run lib/query/use-stale-query.test.tsx`
-Expected: PASS (2 tests)
+Expected: PASS (3 tests)
 
 - [ ] **Step 7: Commit**
 
