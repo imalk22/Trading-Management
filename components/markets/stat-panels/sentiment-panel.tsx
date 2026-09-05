@@ -35,7 +35,7 @@ export function SentimentPanel() {
         ) : isLoading ? (
           <Skeleton className="h-8 w-full" />
         ) : buyPercent === null ? (
-          <p className="text-sm text-muted-foreground">Not available for {symbolInfo.symbol}</p>
+          <p className="text-sm text-muted-foreground">Sentiment data unavailable</p>
         ) : (
           <div className="flex items-center justify-between text-sm">
             <span className="text-up">{buyPercent}% Buy</span>
