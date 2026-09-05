@@ -22,12 +22,15 @@ export function createReconnectingStream(options: ReconnectingStreamOptions) {
   let closedByCaller = false;
 
   function connect() {
+    if (closedByCaller) return;
     socket = new WebSocketImpl(options.url);
     socket.onmessage = (event: MessageEvent) => {
-      options.onMessage(JSON.parse(event.data as string));
-    };
-    socket.onopen = () => {
       attempt = 0;
+      try {
+        options.onMessage(JSON.parse(event.data as string));
+      } catch {
+        // Ignore malformed frames rather than crashing the socket handler.
+      }
     };
     socket.onclose = () => {
       if (closedByCaller) return;
@@ -45,6 +48,10 @@ export function createReconnectingStream(options: ReconnectingStreamOptions) {
   return {
     close() {
       closedByCaller = true;
+      if (socket) {
+        socket.onmessage = null;
+        socket.onclose = null;
+      }
       socket?.close();
     },
   };
@@ -54,6 +61,7 @@ function useBinanceStream<T>(streamPath: string, parse: (msg: any) => T): T | nu
   const [data, setData] = useState<T | null>(null);
 
   useEffect(() => {
+    setData(null);
     const stream = createReconnectingStream({
       url: `wss://stream.binance.com:9443/ws/${streamPath}`,
       onMessage: (msg) => setData(parse(msg)),
@@ -110,7 +118,7 @@ export interface LiveDepth {
   asks: DepthLevel[];
 }
 
-export function useBinanceDepth(symbol: string, levels = 15): LiveDepth | null {
+export function useBinanceDepth(symbol: string, levels = 20): LiveDepth | null {
   return useBinanceStream<LiveDepth>(`${symbol.toLowerCase()}@depth${levels}@1000ms`, (msg) => ({
     bids: msg.bids.map(([price, quantity]: [string, string]) => ({
       price: Number(price),
