@@ -5,8 +5,8 @@ import { DEFAULT_SYMBOL } from "@/lib/symbols";
 
 vi.mock("@/lib/binance/ws", () => ({
   useBinanceTrades: () => [
-    { price: 80243.35, quantity: 0.9424, time: 1735689600000, isBuyerMaker: false },
-    { price: 80230.03, quantity: 0.3247, time: 1735689590000, isBuyerMaker: true },
+    { id: 2, price: 80243.35, quantity: 0.9424, time: 1735689600000, isBuyerMaker: false },
+    { id: 1, price: 80230.03, quantity: 0.3247, time: 1735689590000, isBuyerMaker: true },
   ],
 }));
 

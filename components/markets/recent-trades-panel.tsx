@@ -19,7 +19,7 @@ export function RecentTradesPanel() {
       </div>
       {trades.length === 0 && <p className="text-xs text-muted-foreground">Connecting…</p>}
       {trades.map((trade) => (
-        <div key={trade.time} className="grid grid-cols-3 text-xs">
+        <div key={trade.id} className="grid grid-cols-3 text-xs">
           <span className={cn(trade.isBuyerMaker ? "text-down" : "text-up")}>
             {formatPrice(trade.price)}
           </span>

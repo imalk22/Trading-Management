@@ -132,6 +132,7 @@ export function useBinanceDepth(symbol: string, levels = 20): LiveDepth | null {
 }
 
 export interface LiveTrade {
+  id: number;
   price: number;
   quantity: number;
   time: number;
@@ -148,7 +149,13 @@ export function useBinanceTrades(symbol: string, maxTrades = 20): LiveTrade[] {
       onMessage: (msg: any) => {
         setTrades((prev) =>
           [
-            { price: Number(msg.p), quantity: Number(msg.q), time: msg.T, isBuyerMaker: msg.m },
+            {
+              id: msg.t,
+              price: Number(msg.p),
+              quantity: Number(msg.q),
+              time: msg.T,
+              isBuyerMaker: msg.m,
+            },
             ...prev,
           ].slice(0, maxTrades)
         );
