@@ -2,12 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { createChart, type IChartApi, type ISeriesApi, type UTCTimestamp } from "lightweight-charts";
-import { fetchKlines } from "@/lib/binance/rest";
+import { fetchKlines, type BinanceInterval } from "@/lib/binance/rest";
 import { useBinanceKline } from "@/lib/binance/ws";
 
 export interface CandlestickChartProps {
   symbol: string;
-  interval: string;
+  interval: BinanceInterval;
 }
 
 interface ChartPointSource {

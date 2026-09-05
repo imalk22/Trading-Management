@@ -55,9 +55,18 @@ export interface Kline {
 
 type RawKline = [number, string, string, string, string, string, number, ...unknown[]];
 
+// Binance's interval strings are case-sensitive in a way that matters:
+// "1m" is one minute, "1M" is one month — they're both valid, distinct
+// values, so this must stay a literal union, never normalized with
+// .toLowerCase()/.toUpperCase() at any call site.
+export type BinanceInterval =
+  | "1m" | "3m" | "5m" | "15m" | "30m"
+  | "1h" | "2h" | "4h" | "6h" | "8h" | "12h"
+  | "1d" | "3d" | "1w" | "1M";
+
 export async function fetchKlines(
   symbol: string,
-  interval: string,
+  interval: BinanceInterval,
   limit = 200
 ): Promise<Kline[]> {
   const url = `${SPOT_BASE_URL}/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(

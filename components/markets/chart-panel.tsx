@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useStaleAwareQuery } from "@/lib/query/use-stale-query";
-import { fetchTicker24hr, fetchFundingRate } from "@/lib/binance/rest";
+import { fetchTicker24hr, fetchFundingRate, type BinanceInterval } from "@/lib/binance/rest";
 import { useSymbolStore } from "@/lib/store/symbol-store";
 import { CURATED_SYMBOLS } from "@/lib/symbols";
 import { formatPrice, formatPercent } from "@/lib/format";
@@ -15,7 +15,7 @@ type Timeframe = (typeof TIMEFRAMES)[number];
 // Binance's kline REST/WS interval parameter is lowercase ("1d", not "1D").
 // "1D" is kept as the button label because that's the conventional way
 // trading UIs display the daily timeframe.
-const BINANCE_INTERVAL: Record<Timeframe, string> = {
+const BINANCE_INTERVAL: Record<Timeframe, BinanceInterval> = {
   "1m": "1m",
   "5m": "5m",
   "15m": "15m",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { BinanceInterval } from "@/lib/binance/rest";
 
 export function nextBackoffDelayMs(attempt: number): number {
   const base = 500;
@@ -96,7 +97,7 @@ export interface LiveKline {
   isFinal: boolean;
 }
 
-export function useBinanceKline(symbol: string, interval: string): LiveKline | null {
+export function useBinanceKline(symbol: string, interval: BinanceInterval): LiveKline | null {
   return useBinanceStream<LiveKline>(`${symbol.toLowerCase()}@kline_${interval}`, (msg) => ({
     openTime: msg.k.t,
     open: Number(msg.k.o),
