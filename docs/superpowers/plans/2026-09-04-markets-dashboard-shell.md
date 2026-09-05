@@ -3366,7 +3366,7 @@ git commit -m "feat: add Fear & Greed stat panel"
 - [ ] **Step 1: Write failing test — `components/markets/stat-panels/sentiment-panel.test.tsx`**
 
 ```tsx
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 import { renderWithQueryClient } from "@/lib/test-utils";
 import { useSymbolStore } from "@/lib/store/symbol-store";
@@ -3393,8 +3393,20 @@ describe("SentimentPanel", () => {
     await waitFor(() => expect(screen.getByText(/not available for paxgusdt/i)).toBeInTheDocument());
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  it("shows a distinct message when the fetch fails for a futures-backed symbol, not the no-futures message", async () => {
+    useSymbolStore.setState({ selectedSymbol: "BTCUSDT" });
+    vi.spyOn(rest, "fetchLongShortRatio").mockRejectedValue(new Error("network down"));
+
+    renderWithQueryClient(<SentimentPanel />);
+
+    await waitFor(() => expect(screen.getByText("Sentiment data unavailable")).toBeInTheDocument());
+    expect(screen.queryByText(/not available for btcusdt/i)).not.toBeInTheDocument();
+  });
 });
 ```
+
+(Note: originally the `buyPercent === null` branch reused the same "Not available for {symbol}" message as the no-futures-contract branch. Code review found this conflates two different situations — by the time that branch is reached, `futuresSymbol !== null` and `isLoading` is false, so `data === undefined` there can only mean a genuine fetch error with no cached data, not a structural limitation. Reusing the no-futures wording tells the user a futures-backed symbol like BTCUSDT simply has no futures market, which is false. Fixed with a distinct "Sentiment data unavailable" message, locked in by the third test above. Also dropped the unused `beforeEach` import from the original test snippet's import line, since it was never called.)
 
 - [ ] **Step 2: Run to verify it fails, then implement `components/markets/stat-panels/sentiment-panel.tsx`**
 
@@ -3436,7 +3448,7 @@ export function SentimentPanel() {
         ) : isLoading ? (
           <Skeleton className="h-8 w-full" />
         ) : buyPercent === null ? (
-          <p className="text-sm text-muted-foreground">Not available for {symbolInfo.symbol}</p>
+          <p className="text-sm text-muted-foreground">Sentiment data unavailable</p>
         ) : (
           <div className="flex items-center justify-between text-sm">
             <span className="text-up">{buyPercent}% Buy</span>
@@ -3452,7 +3464,7 @@ export function SentimentPanel() {
 - [ ] **Step 3: Run to verify it passes**
 
 Run: `npx vitest run components/markets/stat-panels/sentiment-panel.test.tsx`
-Expected: PASS (2 tests)
+Expected: PASS (3 tests)
 
 - [ ] **Step 4: Commit**
 
