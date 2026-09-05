@@ -9,14 +9,21 @@ export interface StaleAwareResult<T> {
 
 export function useStaleAwareQuery<T>(options: UseQueryOptions<T>): StaleAwareResult<T> {
   const query = useQuery(options);
-  const lastGoodData = useRef<T | undefined>(undefined);
+  const serializedKey = JSON.stringify(options.queryKey);
+  const lastGoodData = useRef<{ key: string; data: T } | undefined>(undefined);
 
   if (query.data !== undefined) {
-    lastGoodData.current = query.data;
+    lastGoodData.current = { key: serializedKey, data: query.data };
   }
 
-  const data = query.data !== undefined ? query.data : lastGoodData.current;
-  const isStale = query.isError && lastGoodData.current !== undefined;
+  const hasMatchingCachedData = lastGoodData.current?.key === serializedKey;
+  const data =
+    query.data !== undefined
+      ? query.data
+      : hasMatchingCachedData
+        ? lastGoodData.current!.data
+        : undefined;
+  const isStale = query.isError && hasMatchingCachedData;
 
-  return { data, isStale, isLoading: query.isLoading && lastGoodData.current === undefined };
+  return { data, isStale, isLoading: query.isLoading && !hasMatchingCachedData };
 }

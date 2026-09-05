@@ -45,4 +45,30 @@ describe("useStaleAwareQuery", () => {
     await waitFor(() => expect(result.current.isStale).toBe(true));
     expect(result.current.data).toBe("fresh");
   });
+
+  it("does not carry stale data across a query key change", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    let symbol = "BTC";
+    const queryFn = vi.fn(async () => (symbol === "BTC" ? "btc-data" : "eth-data"));
+
+    const { result, rerender } = renderHook(
+      () => useStaleAwareQuery({ queryKey: ["symbol", symbol], queryFn }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.data).toBe("btc-data"));
+
+    symbol = "ETH";
+    rerender();
+
+    expect(result.current.data).toBeUndefined();
+    expect(result.current.isStale).toBe(false);
+    expect(result.current.isLoading).toBe(true);
+
+    await waitFor(() => expect(result.current.data).toBe("eth-data"));
+  });
 });
