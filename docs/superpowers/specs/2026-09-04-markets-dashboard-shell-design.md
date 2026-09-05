@@ -125,3 +125,17 @@ real, tradable equivalent to the reference screenshot's gold pair).
   deployment step.
 - CoinGecko's public rate limit is modest; the route-handler proxy caches
   responses briefly (e.g. 60s) to stay well under it.
+- `useBinanceDepth` (and the other WS hooks in `lib/binance/ws.ts`) open one
+  independent WebSocket connection per call site, with no sharing/dedup
+  across components. Found in Task 24 review: `OrderBookPanel` and
+  `SessionPanel` both subscribe to the same symbol's depth stream
+  independently, so the dashboard opens 2 live sockets to the identical
+  Binance endpoint instead of 1. Low impact at current scale (one browser
+  tab, one public unauthenticated endpoint), but would compound if more
+  panels start sharing streams later (e.g. a watchlist). Deliberately not
+  fixed as part of Phase 1 — `lib/binance/ws.ts` has already needed two
+  rounds of lifecycle hardening, and reference-counted connection sharing
+  is a real, TDD-worthy addition that deserves its own dedicated task
+  rather than a rushed fix folded into a composition task. Revisit if/when
+  connection count becomes a real problem or another panel needs to share
+  a stream.
