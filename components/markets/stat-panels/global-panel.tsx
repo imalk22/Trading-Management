@@ -5,7 +5,7 @@ import { fetchGlobalStats } from "@/lib/external/coingecko";
 import { fetchOpenInterest } from "@/lib/binance/rest";
 import { useSymbolStore } from "@/lib/store/symbol-store";
 import { CURATED_SYMBOLS } from "@/lib/symbols";
-import { formatCompact, formatPercent } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StaleBadge } from "../stale-badge";
@@ -68,7 +68,7 @@ export function GlobalPanel() {
             <Skeleton className="h-4 w-16" />
           ) : (
             <p className="font-semibold">
-              {globalStats ? formatPercent(globalStats.btcDominance) : "—"}
+              {globalStats ? `${globalStats.btcDominance.toFixed(2)}%` : "—"}
             </p>
           )}
         </div>
@@ -83,7 +83,7 @@ export function GlobalPanel() {
               {symbolInfo.futuresSymbol === null
                 ? "—"
                 : openInterest
-                  ? openInterest.openInterest.toLocaleString()
+                  ? openInterest.openInterest.toLocaleString("en-US")
                   : "—"}
             </p>
           )}

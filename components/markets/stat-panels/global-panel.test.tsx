@@ -20,7 +20,7 @@ describe("GlobalPanel", () => {
 
     await waitFor(() => expect(screen.getByText("$3.12T")).toBeInTheDocument());
     expect(screen.getByText("$142.8B")).toBeInTheDocument();
-    expect(screen.getByText("+54.20%")).toBeInTheDocument();
+    expect(screen.getByText("54.20%")).toBeInTheDocument();
     expect(screen.getByText("48,600.12")).toBeInTheDocument();
   });
 
@@ -32,5 +32,21 @@ describe("GlobalPanel", () => {
     renderWithQueryClient(<GlobalPanel />);
 
     await waitFor(() => expect(screen.getAllByText("—")).toHaveLength(4));
+  });
+
+  it("shows a placeholder for open interest on symbols with no futures contract, without blocking global stats", async () => {
+    useSymbolStore.setState({ selectedSymbol: "PAXGUSDT" });
+    vi.spyOn(coingecko, "fetchGlobalStats").mockResolvedValue({
+      totalMarketCapUsd: 3_120_000_000_000,
+      totalVolumeUsd: 142_800_000_000,
+      btcDominance: 54.2,
+    });
+    const fetchOpenInterestMock = vi.spyOn(rest, "fetchOpenInterest");
+
+    renderWithQueryClient(<GlobalPanel />);
+
+    await waitFor(() => expect(screen.getByText("$3.12T")).toBeInTheDocument());
+    expect(fetchOpenInterestMock).not.toHaveBeenCalled();
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });
