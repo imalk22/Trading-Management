@@ -5,6 +5,7 @@ import {
   fetchFundingRate,
   fetchLongShortRatio,
   fetchOpenInterest,
+  fetchOpenInterestChange,
 } from "./rest";
 
 afterEach(() => {
@@ -133,5 +134,23 @@ describe("fetchOpenInterest", () => {
     );
     const result = await fetchOpenInterest("BTCUSDT");
     expect(result).toEqual({ symbol: "BTCUSDT", openInterest: 48600.123 });
+  });
+});
+
+describe("fetchOpenInterestChange", () => {
+  it("computes percent change from the oldest to the newest open-interest sample", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [
+          { sumOpenInterest: "48000.0" },
+          { sumOpenInterest: "48200.0" },
+          { sumOpenInterest: "48600.0" },
+        ],
+      })
+    );
+    const result = await fetchOpenInterestChange("BTCUSDT");
+    expect(result.changePercent).toBeCloseTo(1.25, 2);
   });
 });

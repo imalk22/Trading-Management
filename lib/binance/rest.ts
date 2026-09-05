@@ -135,3 +135,21 @@ export async function fetchOpenInterest(symbol: string): Promise<OpenInterest> {
   const data = await fetchBinanceJson<RawOpenInterest>(url, "openInterest");
   return { symbol: data.symbol, openInterest: Number(data.openInterest) };
 }
+
+export interface OpenInterestChange {
+  changePercent: number;
+}
+
+interface RawOpenInterestHistEntry {
+  sumOpenInterest: string;
+}
+
+export async function fetchOpenInterestChange(symbol: string): Promise<OpenInterestChange> {
+  const url = `${FUTURES_BASE_URL}/futures/data/openInterestHist?symbol=${encodeURIComponent(
+    symbol
+  )}&period=5m&limit=13`;
+  const data = await fetchBinanceJson<RawOpenInterestHistEntry[]>(url, "openInterestHist");
+  const oldest = Number(data[0].sumOpenInterest);
+  const newest = Number(data[data.length - 1].sumOpenInterest);
+  return { changePercent: ((newest - oldest) / oldest) * 100 };
+}
