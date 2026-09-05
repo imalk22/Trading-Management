@@ -11,4 +11,10 @@ describe("FearGreedPanel", () => {
     await waitFor(() => expect(screen.getByText("68")).toBeInTheDocument());
     expect(screen.getByText("Greed")).toBeInTheDocument();
   });
+
+  it("shows a placeholder instead of a blank card when the query errors with no cached data", async () => {
+    vi.spyOn(fearGreed, "fetchFearGreed").mockRejectedValue(new Error("network down"));
+    renderWithQueryClient(<FearGreedPanel />);
+    await waitFor(() => expect(screen.getAllByText("—").length).toBe(2));
+  });
 });

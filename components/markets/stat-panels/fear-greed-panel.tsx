@@ -24,8 +24,8 @@ export function FearGreedPanel() {
           <Skeleton className="h-16 w-24" />
         ) : (
           <>
-            <p className="text-3xl font-bold">{data?.value}</p>
-            <p className="text-sm text-muted-foreground">{data?.classification}</p>
+            <p className="text-3xl font-bold">{data?.value ?? "—"}</p>
+            <p className="text-sm text-muted-foreground">{data?.classification ?? "—"}</p>
           </>
         )}
       </CardContent>
