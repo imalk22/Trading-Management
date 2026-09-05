@@ -2910,6 +2910,13 @@ describe("ChartPanel", () => {
     fireEvent.click(screen.getByRole("tab", { name: "1h" }));
     expect(screen.getByTestId("chart-stub")).toHaveTextContent("BTCUSDT-1h");
   });
+
+  it("maps the 1D tab label to Binance's lowercase daily interval", async () => {
+    renderWithQueryClient(<ChartPanel />);
+    await waitFor(() => expect(screen.getByTestId("chart-stub")).toHaveTextContent("BTCUSDT-15m"));
+    fireEvent.click(screen.getByRole("tab", { name: "1D" }));
+    expect(screen.getByTestId("chart-stub")).toHaveTextContent("BTCUSDT-1d");
+  });
 });
 ```
 
@@ -2929,6 +2936,18 @@ import { CandlestickChart } from "./candlestick-chart";
 
 const TIMEFRAMES = ["1m", "5m", "15m", "1h", "4h", "1D"] as const;
 type Timeframe = (typeof TIMEFRAMES)[number];
+
+// Binance's kline REST/WS interval parameter is lowercase ("1d", not "1D").
+// "1D" is kept as the button label because that's the conventional way
+// trading UIs display the daily timeframe.
+const BINANCE_INTERVAL: Record<Timeframe, string> = {
+  "1m": "1m",
+  "5m": "5m",
+  "15m": "15m",
+  "1h": "1h",
+  "4h": "4h",
+  "1D": "1d",
+};
 
 export function ChartPanel() {
   const selectedSymbol = useSymbolStore((s) => s.selectedSymbol);
@@ -2968,16 +2987,18 @@ export function ChartPanel() {
         </div>
         <Tabs value={timeframe} options={TIMEFRAMES} onChange={setTimeframe} />
       </div>
-      <CandlestickChart symbol={selectedSymbol} interval={timeframe} />
+      <CandlestickChart symbol={selectedSymbol} interval={BINANCE_INTERVAL[timeframe]} />
     </div>
   );
 }
 ```
 
+(Note: found via Task 25's real-browser verification, not by the mocked unit tests — Binance's actual kline REST/WS interval parameter rejects `"1D"` (only lowercase `"1d"` is valid), which surfaced as a CORS-looking `net::ERR_FAILED` in the browser network tab when clicking the daily tab, since Binance's error response for a malformed interval doesn't carry CORS headers. Every unit test mocks `fetchKlines`/`useBinanceKline` directly, so none of them ever sent a real interval string to Binance and none could have caught this. Fixed with a `BINANCE_INTERVAL` lookup so the UI keeps the conventional `"1D"` button label while the actual API/stream calls use `"1d"`.)
+
 - [ ] **Step 8: Run to verify it passes**
 
 Run: `npx vitest run components/markets/chart-panel.test.tsx`
-Expected: PASS (2 tests)
+Expected: PASS (3 tests)
 
 - [ ] **Step 9: Commit**
 
