@@ -1,7 +1,6 @@
 "use client";
 
-import { useStaleAwareQuery } from "@/lib/query/use-stale-query";
-import { fetchTicker24hr } from "@/lib/binance/rest";
+import { useCuratedTickers } from "@/lib/query/use-curated-tickers";
 import { CURATED_SYMBOLS } from "@/lib/symbols";
 import { formatPrice, formatPercent } from "@/lib/format";
 import { Badge } from "@/components/ui/badge";
@@ -9,11 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { StaleBadge } from "./stale-badge";
 
 export function TickerStrip() {
-  const { data, isLoading, isStale } = useStaleAwareQuery({
-    queryKey: ["ticker24hr", "strip"],
-    queryFn: () => fetchTicker24hr(CURATED_SYMBOLS.map((s) => s.symbol)),
-    refetchInterval: 10_000,
-  });
+  const { data, isLoading, isStale } = useCuratedTickers();
 
   if (isLoading) {
     return (
