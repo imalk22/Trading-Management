@@ -32,6 +32,7 @@ export function TopNav() {
         <input
           type="search"
           placeholder="Search markets..."
+          aria-label="Search markets"
           className="w-56 rounded-lg border border-border bg-muted px-3 py-1.5 text-sm outline-none"
         />
         <ThemeToggle />
