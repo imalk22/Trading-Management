@@ -3910,7 +3910,7 @@ describe("GlobalPanel", () => {
 
     await waitFor(() => expect(screen.getByText("$3.12T")).toBeInTheDocument());
     expect(screen.getByText("$142.8B")).toBeInTheDocument();
-    expect(screen.getByText("+54.20%")).toBeInTheDocument();
+    expect(screen.getByText("54.20%")).toBeInTheDocument();
     expect(screen.getByText("48,600.12")).toBeInTheDocument();
   });
 
@@ -3922,6 +3922,22 @@ describe("GlobalPanel", () => {
     renderWithQueryClient(<GlobalPanel />);
 
     await waitFor(() => expect(screen.getAllByText("—")).toHaveLength(4));
+  });
+
+  it("shows a placeholder for open interest on symbols with no futures contract, without blocking global stats", async () => {
+    useSymbolStore.setState({ selectedSymbol: "PAXGUSDT" });
+    vi.spyOn(coingecko, "fetchGlobalStats").mockResolvedValue({
+      totalMarketCapUsd: 3_120_000_000_000,
+      totalVolumeUsd: 142_800_000_000,
+      btcDominance: 54.2,
+    });
+    const fetchOpenInterestMock = vi.spyOn(rest, "fetchOpenInterest");
+
+    renderWithQueryClient(<GlobalPanel />);
+
+    await waitFor(() => expect(screen.getByText("$3.12T")).toBeInTheDocument());
+    expect(fetchOpenInterestMock).not.toHaveBeenCalled();
+    expect(screen.getByText("—")).toBeInTheDocument();
   });
 });
 ```
@@ -3936,7 +3952,7 @@ import { fetchGlobalStats } from "@/lib/external/coingecko";
 import { fetchOpenInterest } from "@/lib/binance/rest";
 import { useSymbolStore } from "@/lib/store/symbol-store";
 import { CURATED_SYMBOLS } from "@/lib/symbols";
-import { formatCompact, formatPercent } from "@/lib/format";
+import { formatCompact } from "@/lib/format";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StaleBadge } from "../stale-badge";
@@ -3999,7 +4015,7 @@ export function GlobalPanel() {
             <Skeleton className="h-4 w-16" />
           ) : (
             <p className="font-semibold">
-              {globalStats ? formatPercent(globalStats.btcDominance) : "—"}
+              {globalStats ? `${globalStats.btcDominance.toFixed(2)}%` : "—"}
             </p>
           )}
         </div>
@@ -4014,7 +4030,7 @@ export function GlobalPanel() {
               {symbolInfo.futuresSymbol === null
                 ? "—"
                 : openInterest
-                  ? openInterest.openInterest.toLocaleString()
+                  ? openInterest.openInterest.toLocaleString("en-US")
                   : "—"}
             </p>
           )}
