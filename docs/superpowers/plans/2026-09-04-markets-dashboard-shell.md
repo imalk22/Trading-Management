@@ -3975,55 +3975,49 @@ export function GlobalPanel() {
       <CardContent className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <p className="text-xs text-muted-foreground">Market Cap</p>
-          <p className="font-semibold">
-            {globalLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : globalStats ? (
-              `$${formatCompact(globalStats.totalMarketCapUsd)}`
-            ) : (
-              "—"
-            )}
-          </p>
+          {globalLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">
+              {globalStats ? `$${formatCompact(globalStats.totalMarketCapUsd)}` : "—"}
+            </p>
+          )}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">24h Volume</p>
-          <p className="font-semibold">
-            {globalLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : globalStats ? (
-              `$${formatCompact(globalStats.totalVolumeUsd)}`
-            ) : (
-              "—"
-            )}
-          </p>
+          {globalLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">
+              {globalStats ? `$${formatCompact(globalStats.totalVolumeUsd)}` : "—"}
+            </p>
+          )}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">BTC Dominance</p>
-          <p className="font-semibold">
-            {globalLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : globalStats ? (
-              formatPercent(globalStats.btcDominance)
-            ) : (
-              "—"
-            )}
-          </p>
+          {globalLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">
+              {globalStats ? formatPercent(globalStats.btcDominance) : "—"}
+            </p>
+          )}
         </div>
         <div>
           <p className="text-xs text-muted-foreground">
             Open Interest ({symbolInfo.symbol.replace("USDT", "")})
           </p>
-          <p className="font-semibold">
-            {symbolInfo.futuresSymbol === null ? (
-              "—"
-            ) : oiLoading ? (
-              <Skeleton className="h-4 w-16" />
-            ) : openInterest ? (
-              openInterest.openInterest.toLocaleString()
-            ) : (
-              "—"
-            )}
-          </p>
+          {symbolInfo.futuresSymbol !== null && oiLoading ? (
+            <Skeleton className="h-4 w-16" />
+          ) : (
+            <p className="font-semibold">
+              {symbolInfo.futuresSymbol === null
+                ? "—"
+                : openInterest
+                  ? openInterest.openInterest.toLocaleString()
+                  : "—"}
+            </p>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -4031,7 +4025,7 @@ export function GlobalPanel() {
 }
 ```
 
-(Note: same infinite-skeleton-on-error fix as Task 22 — each field now checks its own `isLoading` before falling back to a `Skeleton`, so a settled fetch failure with no cached data shows `"—"` instead of spinning forever.)
+(Note: same infinite-skeleton-on-error fix as Task 22 — each field now checks its own `isLoading` before falling back to a `Skeleton`, so a settled fetch failure with no cached data shows `"—"` instead of spinning forever. Also applies Task 22's second fix up front: `Skeleton` — a `<div>` — is never nested inside a `<p>`, since that's invalid HTML and a real hydration-mismatch risk in Next.js, confirmed via an actual console warning when Task 22 had the same structure.)
 
 - [ ] **Step 3: Run to verify it passes**
 
