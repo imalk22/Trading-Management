@@ -3708,6 +3708,17 @@ describe("SessionPanel", () => {
     renderWithQueryClient(<SessionPanel />);
     expect(screen.getByText(/not available for paxgusdt/i)).toBeInTheDocument();
   });
+
+  it("shows placeholders instead of an infinite skeleton when fetches fail with no cached data", async () => {
+    useSymbolStore.setState({ selectedSymbol: "BTCUSDT" });
+    vi.spyOn(rest, "fetchLongShortRatio").mockRejectedValue(new Error("network down"));
+    vi.spyOn(rest, "fetchFundingRate").mockRejectedValue(new Error("network down"));
+    vi.spyOn(rest, "fetchOpenInterestChange").mockRejectedValue(new Error("network down"));
+
+    renderWithQueryClient(<SessionPanel />);
+
+    await waitFor(() => expect(screen.getAllByText("—")).toHaveLength(3));
+  });
 });
 ```
 
@@ -3732,21 +3743,33 @@ export function SessionPanel() {
   const hasFutures = symbolInfo.futuresSymbol !== null;
   const depth = useBinanceDepth(selectedSymbol);
 
-  const { data: ratio, isStale: ratioStale } = useStaleAwareQuery({
+  const {
+    data: ratio,
+    isStale: ratioStale,
+    isLoading: ratioLoading,
+  } = useStaleAwareQuery({
     queryKey: ["longShortRatio", "session", selectedSymbol],
     queryFn: () => fetchLongShortRatio(symbolInfo.futuresSymbol as string),
     enabled: hasFutures,
     refetchInterval: 60_000,
   });
 
-  const { data: funding, isStale: fundingStale } = useStaleAwareQuery({
+  const {
+    data: funding,
+    isStale: fundingStale,
+    isLoading: fundingLoading,
+  } = useStaleAwareQuery({
     queryKey: ["fundingRate", "session", selectedSymbol],
     queryFn: () => fetchFundingRate(symbolInfo.futuresSymbol as string),
     enabled: hasFutures,
     refetchInterval: 60_000,
   });
 
-  const { data: oiChange, isStale: oiStale } = useStaleAwareQuery({
+  const {
+    data: oiChange,
+    isStale: oiStale,
+    isLoading: oiLoading,
+  } = useStaleAwareQuery({
     queryKey: ["openInterestChange", selectedSymbol],
     queryFn: () => fetchOpenInterestChange(symbolInfo.futuresSymbol as string),
     enabled: hasFutures,
@@ -3785,19 +3808,37 @@ export function SessionPanel() {
         <div>
           <p className="text-xs text-muted-foreground">Long / Short</p>
           <p className="font-semibold">
-            {longPercent === null ? <Skeleton className="h-4 w-16" /> : `${longPercent} / ${100 - longPercent}`}
+            {ratioLoading ? (
+              <Skeleton className="h-4 w-16" />
+            ) : longPercent === null ? (
+              "—"
+            ) : (
+              `${longPercent} / ${100 - longPercent}`
+            )}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">OI Change 1h</p>
           <p className="font-semibold">
-            {oiChange ? formatPercent(oiChange.changePercent) : <Skeleton className="h-4 w-16" />}
+            {oiLoading ? (
+              <Skeleton className="h-4 w-16" />
+            ) : oiChange ? (
+              formatPercent(oiChange.changePercent)
+            ) : (
+              "—"
+            )}
           </p>
         </div>
         <div>
           <p className="text-xs text-muted-foreground">Basis</p>
           <p className="font-semibold">
-            {basisPercent === null ? <Skeleton className="h-4 w-16" /> : formatPercent(basisPercent)}
+            {fundingLoading ? (
+              <Skeleton className="h-4 w-16" />
+            ) : basisPercent === null ? (
+              "—"
+            ) : (
+              formatPercent(basisPercent)
+            )}
           </p>
         </div>
         <div>
@@ -3812,10 +3853,12 @@ export function SessionPanel() {
 }
 ```
 
+(Note: originally each field showed `<Skeleton>` indefinitely whenever its value was `null`, without distinguishing "still loading" from "settled with no data" — so a genuine fetch failure with no cached data looked identical to a perpetual loading spinner, forever, rather than a clear failure state. This is the same class of bug found and fixed in Tasks 19/20 [`FearGreedPanel`, `SentimentPanel`], just manifesting as an infinite skeleton instead of a blank card or a mislabeled message. Fixed by destructuring each query's own `isLoading` and using it to choose between `Skeleton` (genuinely loading), `"—"` (settled, no data), and the real value — the `Spread` field is left as-is since it's driven by `useBinanceDepth`, a WebSocket hook with no error/loaded distinction of its own; "still connecting" is the same accepted indefinite state `OrderBookPanel` already uses.)
+
 - [ ] **Step 8: Run to verify it passes**
 
 Run: `npx vitest run components/markets/stat-panels/session-panel.test.tsx`
-Expected: PASS (2 tests)
+Expected: PASS (3 tests)
 
 - [ ] **Step 9: Commit**
 
