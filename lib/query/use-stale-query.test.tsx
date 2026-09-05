@@ -71,4 +71,31 @@ describe("useStaleAwareQuery", () => {
 
     await waitFor(() => expect(result.current.data).toBe("eth-data"));
   });
+
+  it("treats a previously-seen key as fresh again on a same-mount round trip", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+
+    let symbol: "BTC" | "ETH" = "BTC";
+    const queryFn = vi.fn(async () => (symbol === "BTC" ? "btc-data" : "eth-data"));
+
+    const { result, rerender } = renderHook(
+      () => useStaleAwareQuery({ queryKey: ["symbol", symbol], queryFn }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.data).toBe("btc-data"));
+
+    symbol = "ETH";
+    rerender();
+    await waitFor(() => expect(result.current.data).toBe("eth-data"));
+
+    symbol = "BTC";
+    rerender();
+
+    await waitFor(() => expect(result.current.data).toBe("btc-data"));
+    expect(result.current.isStale).toBe(false);
+  });
 });

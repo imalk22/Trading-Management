@@ -1,4 +1,4 @@
-import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { useQuery, type UseQueryOptions, hashKey } from "@tanstack/react-query";
 import { useRef } from "react";
 
 export interface StaleAwareResult<T> {
@@ -9,7 +9,7 @@ export interface StaleAwareResult<T> {
 
 export function useStaleAwareQuery<T>(options: UseQueryOptions<T>): StaleAwareResult<T> {
   const query = useQuery(options);
-  const serializedKey = JSON.stringify(options.queryKey);
+  const serializedKey = hashKey(options.queryKey);
   const lastGoodData = useRef<{ key: string; data: T } | undefined>(undefined);
 
   if (query.data !== undefined) {
