@@ -4275,6 +4275,14 @@ git commit -m "fix: address issues found in manual browser verification"
 
 If no changes were needed, this task requires no commit.
 
+**Verification result:** Ran against a real dev server with Playwright (headless Chromium), driving the checklist above end-to-end. All checks passed: dark mode renders correctly with real live prices across all 10 curated symbols (including PAXGUSDT as "Gold" at a real spot-gold-range price); every REST call (Binance spot/futures, CoinGecko proxy, alternative.me) returned 200; symbol switching updates the chart/order book/trades/sentiment/session panels correctly, and PAXGUSDT gracefully shows "Not available for PAXGUSDT" in Sentiment/Session and a "—" placeholder for Global's open-interest field; all 6 timeframe tabs redraw the chart correctly, including 1D showing real multi-month daily candles (only after the interval-casing fix below); light mode toggles correctly, re-themes every panel with readable contrast, and persists across a reload; all 6 placeholder routes return 200 with the "coming in a later phase" message, nav, and footer intact.
+
+One real bug found and fixed forward (see commits `a48403b`, `327169c`, `87a93c4`): Binance's kline interval parameter rejected the UI's `"1D"` label (case-sensitive, only lowercase `"1d"` is valid), which no mocked unit test could have caught since none of them send a real interval string to Binance. Fixed with a `BinanceInterval` literal-union type so this class of bug can't recur silently.
+
+Two console entries remain, both confirmed non-actionable: a `validateDOMNesting`-adjacent hydration mismatch on the nav's search input's `caret-color` style (confirmed via grep that no application code sets `caret-color` anywhere — this is a browser/automation-environment artifact, not app code) and an occasional WebSocket "Ping received after close" message when rapidly switching symbols (expected protocol-level noise from the correct, already-hardened socket-teardown behavior in `lib/binance/ws.ts`, not a data-integrity issue).
+
+Setting up this verification required installing Playwright and writing a one-off driver script (no `chromium-cli` available in this environment) — worth turning into a proper project skill (`/run-skill-generator`) if manual browser verification becomes a recurring need in later phases.
+
 ---
 
 ## Plan Self-Review
