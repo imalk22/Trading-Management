@@ -57,4 +57,13 @@ describe("computeStrategyAlignments", () => {
     const ma = results.find((r) => r.strategyId === "moving-average-crossover")!;
     expect(ma.status).toBe("not-yet");
   });
+
+  it("handles an empty candle array without throwing", () => {
+    expect(() => computeStrategyAlignments([], "long")).not.toThrow();
+    const results = computeStrategyAlignments([], "long");
+    expect(results).toHaveLength(6);
+    for (const result of results) {
+      expect(result.status).not.toBe("aligned");
+    }
+  });
 });

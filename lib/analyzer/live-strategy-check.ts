@@ -31,6 +31,16 @@ export function computeStrategyAlignments(
   candles: { high: number; low: number; close: number }[],
   direction: "long" | "short"
 ): StrategyAlignment[] {
+  if (candles.length === 0) {
+    return STRATEGIES.map((strategy) => ({
+      strategyId: strategy.id,
+      name: strategy.name,
+      category: strategy.category,
+      status: strategy.entryType !== direction ? ("not-applicable" as const) : ("not-yet" as const),
+      reason: "not enough candle data available",
+    }));
+  }
+
   const closes = candles.map((c) => c.close);
   const i = candles.length - 1;
 
@@ -42,6 +52,13 @@ export function computeStrategyAlignments(
   const wasOversold = rsiValues.slice(0, i).some((v) => v !== undefined && v < 30);
   const rsiResult = detectRsiMeanReversion(rsiValues[i], wasOversold);
 
+  // Deliberate simplification: "resistance" here is just the highest high in a fixed
+  // trailing window, not a level tied to a specific prior consolidation. In a sustained
+  // uptrend the highest high in that window is typically just the previous candle's high,
+  // so this reads as "aligned" on nearly every candle throughout the trend - not only at
+  // the genuine consolidation-then-breakout moment the strategy's description promises.
+  // Accepted tradeoff, not a bug - matches the honest-heuristic framing used for the
+  // live Head & Shoulders evaluator.
   const resistanceWindow = candles.slice(Math.max(0, i - RESISTANCE_LOOKBACK), i);
   const resistance = resistanceWindow.length > 0 ? Math.max(...resistanceWindow.map((c) => c.high)) : Infinity;
   const srResult = detectSupportResistanceBreakout(closes[i], resistance);
