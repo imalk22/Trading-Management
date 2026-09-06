@@ -1,6 +1,14 @@
 import { generateWalk, type GeneratedCandle } from "./rng";
 import { sma, ema, rsi, rollingStdev } from "./indicators";
 import { computeTrade, type TradeOutcome } from "./trade";
+import {
+  detectMovingAverageCrossover,
+  detectRsiMeanReversion,
+  detectSupportResistanceBreakout,
+  detectBollingerSqueeze,
+  detectMacdMomentumCross,
+  detectHeadAndShoulders,
+} from "./detectors";
 
 export type StrategyCategory =
   | "Trend Following"
@@ -35,12 +43,7 @@ function buildMovingAverageCrossover(): Strategy {
   let entryIndex = 20;
   let found = false;
   for (let i = 15; i < candles.length; i++) {
-    const prevFast = fast[i - 1];
-    const prevSlow = slow[i - 1];
-    const curFast = fast[i];
-    const curSlow = slow[i];
-    if (prevFast === undefined || prevSlow === undefined || curFast === undefined || curSlow === undefined) continue;
-    if (prevFast <= prevSlow && curFast > curSlow) {
+    if (detectMovingAverageCrossover(fast[i - 1], slow[i - 1], fast[i], slow[i]).aligned) {
       entryIndex = i;
       found = true;
       break;
@@ -82,8 +85,11 @@ function buildRsiMeanReversion(): Strategy {
   for (let i = 14; i < candles.length; i++) {
     const value = rsiValues[i];
     if (value === undefined) continue;
-    if (value < 30) wasOversold = true;
-    else if (wasOversold && value >= 30) {
+    if (value < 30) {
+      wasOversold = true;
+      continue;
+    }
+    if (detectRsiMeanReversion(value, wasOversold).aligned) {
       entryIndex = i;
       found = true;
       break;
@@ -120,7 +126,7 @@ function buildSupportResistanceBreakout(): Strategy {
   let entryIndex = consolidationLength;
   let found = false;
   for (let i = consolidationLength; i < candles.length; i++) {
-    if (candles[i].close > resistance) {
+    if (detectSupportResistanceBreakout(candles[i].close, resistance).aligned) {
       entryIndex = i;
       found = true;
       break;
@@ -164,11 +170,7 @@ function buildBollingerSqueeze(): Strategy {
   // warmup index (20) lets random noise inside the squeeze itself trip a false
   // "breakout" before the intended post-squeeze expansion.
   for (let i = squeezeLength - 1; i < candles.length - 1; i++) {
-    const mid = middle[i];
-    const w = width[i];
-    if (mid === undefined || w === undefined) continue;
-    const upperBand = mid + w * 2;
-    if (candles[i + 1].close > upperBand) {
+    if (detectBollingerSqueeze(candles[i + 1].close, middle[i], width[i]).aligned) {
       entryIndex = i + 1;
       found = true;
       break;
@@ -220,14 +222,7 @@ function buildMacdMomentumCross(): Strategy {
   let entryIndex = 40;
   let found = false;
   for (let i = 1; i < candles.length; i++) {
-    const prevMacd = macdLine[i - 1];
-    const prevSignal = signalLine[i - 1];
-    const curMacd = macdLine[i];
-    const curSignal = signalLine[i];
-    if (prevMacd === undefined || prevSignal === undefined || curMacd === undefined || curSignal === undefined) {
-      continue;
-    }
-    if (prevMacd <= prevSignal && curMacd > curSignal) {
+    if (detectMacdMomentumCross(macdLine[i - 1], signalLine[i - 1], macdLine[i], signalLine[i]).aligned) {
       entryIndex = i;
       found = true;
       break;
@@ -283,7 +278,7 @@ function buildHeadAndShoulders(): Strategy {
   let entryIndex = phaseLength * 5;
   let found = false;
   for (let i = phaseLength * 5; i < candles.length; i++) {
-    if (candles[i].close < necklinePrice) {
+    if (detectHeadAndShoulders(candles[i].close, necklinePrice).aligned) {
       entryIndex = i;
       found = true;
       break;
