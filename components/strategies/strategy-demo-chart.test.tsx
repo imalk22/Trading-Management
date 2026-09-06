@@ -35,6 +35,13 @@ const testStrategy: Strategy = {
   exitReason: "take-profit",
 };
 
+const shortTestStrategy: Strategy = {
+  ...testStrategy,
+  id: "test-strategy-short",
+  name: "Test Strategy Short",
+  entryType: "short",
+};
+
 describe("StrategyDemoChart", () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -89,5 +96,47 @@ describe("StrategyDemoChart", () => {
 
     expect(setData.mock.calls.length).toBe(callsBeforeUnmount);
     expect(chartRemove).toHaveBeenCalledOnce();
+  });
+
+  it("resets and restarts the reveal loop after finishing a full pass", () => {
+    render(<StrategyDemoChart strategy={testStrategy} />);
+
+    // Reveal all candles, then run past the LOOP_PAUSE_MS pause so the
+    // reset-then-restart branch (revealCount = 0, setMarkers([]), reschedule) fires.
+    vi.advanceTimersByTime(120 * testStrategy.candles.length);
+    vi.advanceTimersByTime(1500);
+
+    const clearedMarkersAtSomePoint = setMarkers.mock.calls.some(([markers]) => markers.length === 0);
+    expect(clearedMarkersAtSomePoint).toBe(true);
+
+    vi.advanceTimersByTime(120);
+    expect(setData.mock.calls.at(-1)?.[0]).toEqual([expect.objectContaining({ close: 100 })]);
+  });
+
+  it("does not resume the loop if unmounted while paused between reveal passes", () => {
+    const { unmount } = render(<StrategyDemoChart strategy={testStrategy} />);
+
+    // Run the reveal to completion so the pending timer is the LOOP_PAUSE_MS
+    // pause-then-reset timeout, not a plain per-candle tick.
+    vi.advanceTimersByTime(120 * testStrategy.candles.length);
+    const setDataCallsBeforeUnmount = setData.mock.calls.length;
+    const setMarkersCallsBeforeUnmount = setMarkers.mock.calls.length;
+
+    unmount();
+    vi.advanceTimersByTime(5000);
+
+    expect(setData.mock.calls.length).toBe(setDataCallsBeforeUnmount);
+    expect(setMarkers.mock.calls.length).toBe(setMarkersCallsBeforeUnmount);
+    expect(chartRemove).toHaveBeenCalledOnce();
+  });
+
+  it("uses short-side marker styling for a short entryType", () => {
+    render(<StrategyDemoChart strategy={shortTestStrategy} />);
+
+    vi.advanceTimersByTime(120 * 2);
+
+    expect(setMarkers).toHaveBeenLastCalledWith([
+      expect.objectContaining({ text: "Entry", position: "aboveBar", shape: "arrowDown" }),
+    ]);
   });
 });
