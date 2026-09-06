@@ -33,6 +33,7 @@ function buildMovingAverageCrossover(): Strategy {
   const slow = sma(closes, 15);
 
   let entryIndex = 20;
+  let found = false;
   for (let i = 15; i < candles.length; i++) {
     const prevFast = fast[i - 1];
     const prevSlow = slow[i - 1];
@@ -41,8 +42,14 @@ function buildMovingAverageCrossover(): Strategy {
     if (prevFast === undefined || prevSlow === undefined || curFast === undefined || curSlow === undefined) continue;
     if (prevFast <= prevSlow && curFast > curSlow) {
       entryIndex = i;
+      found = true;
       break;
     }
+  }
+  if (!found) {
+    throw new Error(
+      "moving-average-crossover: no fast/slow SMA crossover found in the generated series - tune seed/drift/volatility"
+    );
   }
 
   return {
@@ -70,6 +77,7 @@ function buildRsiMeanReversion(): Strategy {
   const rsiValues = rsi(closes, 14);
 
   let entryIndex = 26;
+  let found = false;
   let wasOversold = false;
   for (let i = 14; i < candles.length; i++) {
     const value = rsiValues[i];
@@ -77,8 +85,12 @@ function buildRsiMeanReversion(): Strategy {
     if (value < 30) wasOversold = true;
     else if (wasOversold && value >= 30) {
       entryIndex = i;
+      found = true;
       break;
     }
+  }
+  if (!found) {
+    throw new Error("rsi-mean-reversion: no oversold-then-recovery RSI signal found in the generated series - tune seed/drift/volatility");
   }
 
   return {
@@ -106,11 +118,18 @@ function buildSupportResistanceBreakout(): Strategy {
   const resistance = Math.max(...candles.slice(0, consolidationLength).map((c) => c.high));
 
   let entryIndex = consolidationLength;
+  let found = false;
   for (let i = consolidationLength; i < candles.length; i++) {
     if (candles[i].close > resistance) {
       entryIndex = i;
+      found = true;
       break;
     }
+  }
+  if (!found) {
+    throw new Error(
+      "support-resistance-breakout: no close above resistance found in the generated series - tune seed/drift/volatility"
+    );
   }
 
   return {
@@ -140,6 +159,7 @@ function buildBollingerSqueeze(): Strategy {
   const width = rollingStdev(closes, 20);
 
   let entryIndex = squeezeLength + 1;
+  let found = false;
   // Scan only from the end of the squeeze phase onward - starting from the SMA
   // warmup index (20) lets random noise inside the squeeze itself trip a false
   // "breakout" before the intended post-squeeze expansion.
@@ -150,8 +170,14 @@ function buildBollingerSqueeze(): Strategy {
     const upperBand = mid + w * 2;
     if (candles[i + 1].close > upperBand) {
       entryIndex = i + 1;
+      found = true;
       break;
     }
+  }
+  if (!found) {
+    throw new Error(
+      "bollinger-band-squeeze: no post-squeeze upper-band breakout found in the generated series - tune seed/drift/volatility"
+    );
   }
 
   return {
@@ -192,6 +218,7 @@ function buildMacdMomentumCross(): Strategy {
   });
 
   let entryIndex = 40;
+  let found = false;
   for (let i = 1; i < candles.length; i++) {
     const prevMacd = macdLine[i - 1];
     const prevSignal = signalLine[i - 1];
@@ -202,8 +229,12 @@ function buildMacdMomentumCross(): Strategy {
     }
     if (prevMacd <= prevSignal && curMacd > curSignal) {
       entryIndex = i;
+      found = true;
       break;
     }
+  }
+  if (!found) {
+    throw new Error("macd-momentum-cross: no MACD/signal-line crossover found in the generated series - tune seed/drift/volatility");
   }
 
   return {
@@ -250,11 +281,16 @@ function buildHeadAndShoulders(): Strategy {
   );
 
   let entryIndex = phaseLength * 5;
+  let found = false;
   for (let i = phaseLength * 5; i < candles.length; i++) {
     if (candles[i].close < necklinePrice) {
       entryIndex = i;
+      found = true;
       break;
     }
+  }
+  if (!found) {
+    throw new Error("head-and-shoulders-reversal: no close below the neckline found in the generated series - tune seed/drift/volatility");
   }
 
   return {
