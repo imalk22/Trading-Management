@@ -23,6 +23,13 @@ describe("detectMovingAverageCrossover", () => {
     const result = detectMovingAverageCrossover(undefined, 100, 101, 100.5);
     expect(result.aligned).toBe(false);
   });
+
+  it("is not aligned when the fast average is exactly equal to the slow average, and says so accurately", () => {
+    const result = detectMovingAverageCrossover(99, 100, 100, 100);
+    expect(result.aligned).toBe(false);
+    expect(result.reason).not.toContain("below");
+    expect(result.reason).toContain("hasn't crossed above");
+  });
 });
 
 describe("detectRsiMeanReversion", () => {
@@ -55,6 +62,13 @@ describe("detectSupportResistanceBreakout", () => {
   it("is not aligned when price closes below resistance", () => {
     expect(detectSupportResistanceBreakout(98, 100).aligned).toBe(false);
   });
+
+  it("is not aligned when price closes exactly at resistance, and says so accurately", () => {
+    const result = detectSupportResistanceBreakout(100, 100);
+    expect(result.aligned).toBe(false);
+    expect(result.reason).not.toContain("below");
+    expect(result.reason).toContain("hasn't closed above");
+  });
 });
 
 describe("detectBollingerSqueeze", () => {
@@ -69,6 +83,13 @@ describe("detectBollingerSqueeze", () => {
   it("is not aligned when the bands aren't available yet", () => {
     expect(detectBollingerSqueeze(110, undefined, undefined).aligned).toBe(false);
   });
+
+  it("is not aligned when price closes exactly at the upper band, and says so accurately", () => {
+    const result = detectBollingerSqueeze(108, 100, 4);
+    expect(result.aligned).toBe(false);
+    expect(result.reason).not.toContain("inside");
+    expect(result.reason).toContain("hasn't closed above");
+  });
 });
 
 describe("detectMacdMomentumCross", () => {
@@ -81,6 +102,13 @@ describe("detectMacdMomentumCross", () => {
     const result = detectMacdMomentumCross(0.3, 0.1, 0.4, 0.15);
     expect(result.aligned).toBe(false);
   });
+
+  it("is not aligned when MACD is exactly equal to its signal line, and says so accurately", () => {
+    const result = detectMacdMomentumCross(-0.1, -0.05, 0.05, 0.05);
+    expect(result.aligned).toBe(false);
+    expect(result.reason).not.toContain("below");
+    expect(result.reason).toContain("hasn't crossed above");
+  });
 });
 
 describe("detectHeadAndShoulders", () => {
@@ -90,5 +118,12 @@ describe("detectHeadAndShoulders", () => {
 
   it("is not aligned when price closes above the neckline", () => {
     expect(detectHeadAndShoulders(102, 100).aligned).toBe(false);
+  });
+
+  it("is not aligned when price closes exactly at the neckline, and says so accurately", () => {
+    const result = detectHeadAndShoulders(100, 100);
+    expect(result.aligned).toBe(false);
+    expect(result.reason).not.toContain("above");
+    expect(result.reason).toContain("hasn't closed below");
   });
 });

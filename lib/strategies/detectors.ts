@@ -25,7 +25,7 @@ export function detectMovingAverageCrossover(
       reason: `fast SMA (${curFast.toFixed(2)}) is above slow SMA (${curSlow.toFixed(2)}), but the cross already happened`,
     };
   }
-  return { aligned: false, reason: `fast SMA (${curFast.toFixed(2)}) is still below slow SMA (${curSlow.toFixed(2)})` };
+  return { aligned: false, reason: `fast SMA (${curFast.toFixed(2)}) hasn't crossed above slow SMA (${curSlow.toFixed(2)}) yet` };
 }
 
 export function detectRsiMeanReversion(rsiValue: number | undefined, wasOversold: boolean): DetectionResult {
@@ -47,7 +47,7 @@ export function detectSupportResistanceBreakout(close: number, resistance: numbe
     aligned,
     reason: aligned
       ? `price closed at ${close.toFixed(2)}, above resistance (${resistance.toFixed(2)})`
-      : `price is at ${close.toFixed(2)}, still below resistance (${resistance.toFixed(2)})`,
+      : `price is at ${close.toFixed(2)}, hasn't closed above resistance (${resistance.toFixed(2)}) yet`,
   };
 }
 
@@ -65,7 +65,7 @@ export function detectBollingerSqueeze(
     aligned,
     reason: aligned
       ? `price closed at ${breakoutClose.toFixed(2)}, above the upper band (${upperBand.toFixed(2)})`
-      : `price is at ${breakoutClose.toFixed(2)}, still inside the upper band (${upperBand.toFixed(2)})`,
+      : `price is at ${breakoutClose.toFixed(2)}, hasn't closed above the upper band (${upperBand.toFixed(2)}) yet`,
   };
 }
 
@@ -88,7 +88,7 @@ export function detectMacdMomentumCross(
   if (curMacd > curSignal) {
     return { aligned: false, reason: "MACD line is above its signal line, but the cross already happened" };
   }
-  return { aligned: false, reason: "MACD line is still below its signal line" };
+  return { aligned: false, reason: "MACD line hasn't crossed above its signal line yet" };
 }
 
 export function detectHeadAndShoulders(close: number, necklinePrice: number): DetectionResult {
@@ -97,6 +97,6 @@ export function detectHeadAndShoulders(close: number, necklinePrice: number): De
     aligned,
     reason: aligned
       ? `price closed at ${close.toFixed(2)}, below the neckline (${necklinePrice.toFixed(2)})`
-      : `price is at ${close.toFixed(2)}, still above the neckline (${necklinePrice.toFixed(2)})`,
+      : `price is at ${close.toFixed(2)}, hasn't closed below the neckline (${necklinePrice.toFixed(2)}) yet`,
   };
 }
