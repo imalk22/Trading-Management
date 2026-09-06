@@ -232,7 +232,7 @@ export function detectHeadAndShoulders(close: number, necklinePrice: number): De
 - [ ] **Step 4: Run to verify it passes**
 
 Run: `npx vitest run lib/strategies/detectors.test.ts`
-Expected: PASS (14 tests)
+Expected: PASS (16 tests)
 
 - [ ] **Step 5: Refactor `lib/strategies/data.ts` to use the new detectors**
 
@@ -555,10 +555,10 @@ export const STRATEGIES: Strategy[] = [
 - [ ] **Step 6: Run the full suite to confirm the refactor is behavior-preserving**
 
 Run: `npx vitest run lib/strategies/`
-Expected: PASS — `data.test.ts` (9 tests, unchanged file, must still pass with no edits), `detectors.test.ts` (14 tests), plus every other file in `lib/strategies/` (rng, indicators, trade). If ANY `data.test.ts` assertion fails, the refactor introduced a behavioral difference — do not edit `data.test.ts` to make it pass; find and fix the discrepancy between the old inline comparison and the new detector call for the specific strategy that failed.
+Expected: PASS — `data.test.ts` (9 tests, unchanged file, must still pass with no edits), `detectors.test.ts` (16 tests), plus every other file in `lib/strategies/` (rng, indicators, trade). If ANY `data.test.ts` assertion fails, the refactor introduced a behavioral difference — do not edit `data.test.ts` to make it pass; find and fix the discrepancy between the old inline comparison and the new detector call for the specific strategy that failed.
 
 Then run: `npx vitest run` (full project suite)
-Expected: PASS — all 117 pre-existing tests plus this task's 14 new ones (131 total).
+Expected: PASS — all 117 pre-existing tests plus this task's 16 new ones (133 total).
 
 - [ ] **Step 7: Type-check**
 
@@ -2072,7 +2072,7 @@ Expected: PASS
 - [ ] **Step 5: Run the full test suite and production build**
 
 Run: `npx vitest run`
-Expected: PASS — every test file from this plan plus everything from Phases 1-2 passes (131 tests from before this plan + this plan's new tests).
+Expected: PASS — every test file from this plan plus everything from Phases 1-2 passes (133 tests from before this plan + this plan's new tests).
 
 Run: `npm run build`
 Expected: build completes with no errors.
