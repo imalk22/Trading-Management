@@ -173,7 +173,7 @@ export function generateWalk(options: GenerateWalkOptions): GeneratedCandle[] {
 - [ ] **Step 4: Run to verify it passes**
 
 Run: `npx vitest run lib/strategies/rng.test.ts`
-Expected: PASS (7 tests)
+Expected: PASS (8 tests)
 
 - [ ] **Step 5: Commit**
 
