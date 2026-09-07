@@ -15,4 +15,5 @@ export interface CryptoMilestone {
   title: string;
   date: string;
   description: string;
+  isEstimate: boolean;
 }

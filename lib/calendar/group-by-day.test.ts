@@ -52,4 +52,29 @@ describe("groupEventsByLocalDay", () => {
     expect(groups).toHaveLength(1);
     expect(groups[0].events).toEqual([event]);
   });
+
+  it("skips events with an unparseable date instead of throwing, keeping the valid events grouped", () => {
+    const valid1 = makeEvent({ id: "valid-1", date: "2026-09-07T08:00:00-04:00" });
+    const invalid = makeEvent({ id: "invalid", date: "not-a-real-date" });
+    const valid2 = makeEvent({ id: "valid-2", date: "2026-09-08T08:00:00-04:00" });
+
+    expect(() => groupEventsByLocalDay([valid1, invalid, valid2], "America/New_York")).not.toThrow();
+
+    const groups = groupEventsByLocalDay([valid1, invalid, valid2], "America/New_York");
+    expect(groups).toEqual([
+      { dateKey: "2026-09-07", events: [valid1] },
+      { dateKey: "2026-09-08", events: [valid2] },
+    ]);
+  });
+
+  it("preserves original relative order for events sharing the exact same timestamp", () => {
+    const sameInstant = "2026-09-07T12:00:00-04:00";
+    const first = makeEvent({ id: "first", country: "USD", date: sameInstant });
+    const second = makeEvent({ id: "second", country: "EUR", date: sameInstant });
+    const third = makeEvent({ id: "third", country: "GBP", date: sameInstant });
+
+    const groups = groupEventsByLocalDay([first, second, third], "America/New_York");
+
+    expect(groups).toEqual([{ dateKey: "2026-09-07", events: [first, second, third] }]);
+  });
 });
