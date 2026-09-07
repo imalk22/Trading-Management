@@ -19,11 +19,20 @@ export async function GET() {
   }
 
   const results = await Promise.allSettled(NEWS_SOURCES.map(fetchSourceArticles));
+
+  results.forEach((result, i) => {
+    if (result.status === "rejected") {
+      console.error(`[news] ${NEWS_SOURCES[i].name} failed:`, result.reason);
+    }
+  });
+
   const articles = results
     .filter((r): r is PromiseFulfilledResult<NewsArticle[]> => r.status === "fulfilled")
     .flatMap((r) => r.value)
     .sort((a, b) => b.publishedAt - a.publishedAt);
 
-  cache = { articles, expiresAt: Date.now() + CACHE_TTL_MS };
+  if (articles.length > 0) {
+    cache = { articles, expiresAt: Date.now() + CACHE_TTL_MS };
+  }
   return NextResponse.json({ articles });
 }

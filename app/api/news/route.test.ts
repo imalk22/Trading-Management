@@ -109,6 +109,37 @@ describe("GET /api/news", () => {
     expect(body.articles).toEqual([]);
   });
 
+  it("does not cache a total-failure result, so the next call re-fetches", async () => {
+    vi.stubGlobal(
+      "fetch",
+      mockFetchByUrl({
+        "coindesk.com": { ok: false },
+        "cointelegraph.com": { ok: false },
+        "decrypt.co": { ok: false },
+        "theblock.co": { ok: false },
+      })
+    );
+
+    const { GET } = await import("./route");
+    const firstResponse = await GET();
+    const firstBody = await firstResponse.json();
+    expect(firstBody.articles).toEqual([]);
+
+    const recoveredFetchMock = mockFetchByUrl({
+      "coindesk.com": { ok: true, text: COINDESK_XML },
+      "cointelegraph.com": { ok: true, text: COINTELEGRAPH_XML },
+      "decrypt.co": { ok: true, text: DECRYPT_XML },
+      "theblock.co": { ok: true, text: THE_BLOCK_XML },
+    });
+    vi.stubGlobal("fetch", recoveredFetchMock);
+
+    const secondResponse = await GET();
+    const secondBody = await secondResponse.json();
+
+    expect(recoveredFetchMock).toHaveBeenCalledTimes(4);
+    expect(secondBody.articles).toHaveLength(4);
+  });
+
   it("serves a cached response on a second call within the TTL without re-fetching", async () => {
     const fetchMock = mockFetchByUrl({
       "coindesk.com": { ok: true, text: COINDESK_XML },
