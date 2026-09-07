@@ -125,6 +125,7 @@ export function useLiveStrategyCheck(
     queryKey: ["analyzerKlines", symbol],
     queryFn: () => fetchKlines(symbol, KLINE_INTERVAL, KLINE_LIMIT),
     refetchInterval: 60_000,
+    enabled: direction !== "invalid",
   });
 
   const data = klines && direction !== "invalid" ? computeStrategyAlignments(klines, direction) : undefined;

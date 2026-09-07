@@ -17,6 +17,7 @@ describe("StrategyAlignmentPanel", () => {
   it("prompts for a valid trade setup when direction is invalid", () => {
     renderWithQueryClient(<StrategyAlignmentPanel symbol="BTCUSDT" direction="invalid" />);
     expect(screen.getByText(/enter a valid trade setup/i)).toBeInTheDocument();
+    expect(fetchKlines).not.toHaveBeenCalled();
   });
 
   it("renders one row per strategy once live data resolves", async () => {
