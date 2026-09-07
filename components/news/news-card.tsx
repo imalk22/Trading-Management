@@ -27,11 +27,11 @@ export function NewsCard({ article }: NewsCardProps) {
           href={article.link}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm font-semibold hover:underline"
+          className="line-clamp-2 text-sm font-semibold hover:underline"
         >
           {article.title}
         </a>
-        <p className="text-sm text-muted-foreground">{article.summary}</p>
+        <p className="line-clamp-3 text-sm text-muted-foreground">{article.summary}</p>
       </CardContent>
     </Card>
   );

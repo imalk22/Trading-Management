@@ -21,4 +21,9 @@ describe("formatRelativeTime", () => {
     const now = Date.now();
     expect(formatRelativeTime(now - 2 * 24 * 60 * 60_000, now)).toBe("2d ago");
   });
+
+  it("clamps future timestamps to 0s ago instead of a negative number", () => {
+    const now = Date.now();
+    expect(formatRelativeTime(now + 5000, now)).toBe("0s ago");
+  });
 });
