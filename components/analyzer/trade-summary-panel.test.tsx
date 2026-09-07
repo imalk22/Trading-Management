@@ -56,4 +56,31 @@ describe("TradeSummaryPanel", () => {
     expect(screen.getByText("1:2.00")).toBeInTheDocument();
     expect(await screen.findByText(/20\.0000 units/)).toBeInTheDocument();
   });
+
+  it("renders the resolved current price, entry distance, and max loss/gain for a valid long trade", async () => {
+    vi.mocked(fetchTicker24hr).mockResolvedValue([
+      {
+        symbol: "BTCUSDT",
+        lastPrice: 105,
+        priceChangePercent: 0,
+        highPrice: 0,
+        lowPrice: 0,
+        volume: 0,
+        quoteVolume: 0,
+      },
+    ]);
+    renderWithQueryClient(
+      <TradeSummaryPanel
+        symbol="BTCUSDT"
+        entryPrice={100}
+        takeProfitPrice={110}
+        stopLossPrice={95}
+        accountBalance={10000}
+        riskPercent={1}
+      />
+    );
+    expect(await screen.findByText(/\$105\.00 \(entry is -4\.76% away\)/)).toBeInTheDocument();
+    expect(screen.getByText(/\$100\.00 \(-1\.00%\)/)).toBeInTheDocument();
+    expect(screen.getByText(/\$200\.00 \(\+2\.00%\)/)).toBeInTheDocument();
+  });
 });
