@@ -6,9 +6,10 @@ import { NEWS_SOURCES } from "@/lib/news/sources";
 import { NewsCard } from "@/components/news/news-card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StaleBadge } from "@/components/markets/stale-badge";
 
 export default function NewsPage() {
-  const { data: articles, isLoading } = useNews();
+  const { data: articles, isLoading, isStale } = useNews();
   const [searchQuery, setSearchQuery] = useState("");
   const [excludedSources, setExcludedSources] = useState<Set<string>>(new Set());
 
@@ -33,7 +34,10 @@ export default function NewsPage() {
   return (
     <main className="flex flex-col gap-6 p-6">
       <div>
-        <h1 className="text-2xl font-semibold">News</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-semibold">News</h1>
+          {isStale && <StaleBadge />}
+        </div>
         <p className="text-sm text-muted-foreground">
           Live headlines from CoinDesk, Cointelegraph, Decrypt, and The Block.
         </p>
@@ -65,6 +69,8 @@ export default function NewsPage() {
             <Skeleton key={i} className="h-64 w-full" />
           ))}
         </div>
+      ) : (articles?.length ?? 0) === 0 ? (
+        <p className="text-sm text-muted-foreground">News is unavailable right now.</p>
       ) : filteredArticles.length === 0 ? (
         <p className="text-sm text-muted-foreground">No articles match your filters.</p>
       ) : (
