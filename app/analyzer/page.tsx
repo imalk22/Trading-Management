@@ -8,8 +8,8 @@ import { TradeInputForm, type TradeFormValues } from "@/components/analyzer/trad
 import { TradeSummaryPanel } from "@/components/analyzer/trade-summary-panel";
 import { StrategyAlignmentPanel } from "@/components/analyzer/strategy-alignment-panel";
 
-function parseNumberOrNull(value: string | undefined): number | null {
-  if (!value || value.trim() === "") return null;
+function parseNumberOrNull(value: string): number | null {
+  if (value.trim() === "") return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : null;
 }

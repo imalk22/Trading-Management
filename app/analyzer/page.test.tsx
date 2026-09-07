@@ -1,16 +1,17 @@
 import { describe, it, expect, vi } from "vitest";
 import { screen, fireEvent } from "@testing-library/react";
 import { renderWithQueryClient } from "@/lib/test-utils";
+import type { TradeFormValues } from "@/components/analyzer/trade-input-form";
 
 vi.mock("@/components/analyzer/trade-input-form", () => ({
   TradeInputForm: ({
     values,
     onChange,
   }: {
-    values: { entryPrice: string };
-    onChange: (v: { entryPrice: string }) => void;
+    values: TradeFormValues;
+    onChange: (v: TradeFormValues) => void;
   }) => (
-    <input aria-label="entry-stub" value={values.entryPrice} onChange={(e) => onChange({ entryPrice: e.target.value })} />
+    <input aria-label="entry-stub" value={values.entryPrice} onChange={(e) => onChange({ ...values, entryPrice: e.target.value })} />
   ),
 }));
 vi.mock("@/components/analyzer/trade-summary-panel", () => ({
