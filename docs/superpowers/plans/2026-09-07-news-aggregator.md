@@ -265,8 +265,8 @@ function stripHtml(html: string): string {
 
 function extractImageUrl(item: RawItem, description: string): string | null {
   if (item["media:content"]?.["@_url"]) return item["media:content"]["@_url"];
-  if (item["media:thumbnail"]?.["@_url"]) return item["media:thumbnail"]["@_url"];
   if (item.enclosure?.["@_url"]) return item.enclosure["@_url"];
+  if (item["media:thumbnail"]?.["@_url"]) return item["media:thumbnail"]["@_url"];
   return extractInlineImage(description);
 }
 

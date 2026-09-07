@@ -76,7 +76,7 @@ output:
 - Decrypt: `<enclosure url="...">` AND `<media:thumbnail url="...">`.
 
 No single tag works across all four, so the parser tries, in order:
-`media:content` → `media:thumbnail` → `enclosure` → first `<img src>`
+`media:content` → `enclosure` → `media:thumbnail` → first `<img src>`
 found inside the description HTML → no image (render a text-only
 card).
 
