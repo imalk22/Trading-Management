@@ -10,6 +10,7 @@ const parser = new XMLParser({
 interface RawItem {
   title?: unknown;
   link?: unknown;
+  guid?: unknown;
   pubDate?: unknown;
   description?: unknown;
   "media:content"?: { "@_url"?: string };
@@ -20,6 +21,9 @@ interface RawItem {
 function asText(value: unknown): string {
   if (typeof value === "string") return value;
   if (typeof value === "number") return String(value);
+  if (value && typeof value === "object" && typeof (value as Record<string, unknown>)["#text"] === "string") {
+    return (value as Record<string, unknown>)["#text"] as string;
+  }
   return "";
 }
 
@@ -29,7 +33,7 @@ function extractInlineImage(description: string): string | null {
 }
 
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, "").trim();
+  return html.replace(/<\/?[a-zA-Z!][^>]*>/g, "").trim();
 }
 
 function extractImageUrl(item: RawItem, description: string): string | null {
@@ -52,7 +56,7 @@ export function parseRssFeed(xml: string, sourceName: string): NewsArticle[] {
     const publishedAt = Date.parse(asText(item.pubDate));
 
     articles.push({
-      id: link,
+      id: asText(item.guid) || link,
       title: asText(item.title),
       link,
       source: sourceName,

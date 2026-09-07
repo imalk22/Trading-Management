@@ -19,7 +19,7 @@ describe("parseRssFeed", () => {
 
     expect(articles).toHaveLength(1);
     expect(articles[0]).toEqual({
-      id: "https://www.coindesk.com/tech/2026/09/07/solana-to-triple-transaction-size",
+      id: "439b6a6f-5bd3-4e01-8707-8ac28ef798af",
       title: "Solana to triple transaction size as apps get room for more complex trades",
       link: "https://www.coindesk.com/tech/2026/09/07/solana-to-triple-transaction-size",
       source: "CoinDesk",
@@ -49,7 +49,7 @@ describe("parseRssFeed", () => {
     expect(articles).toHaveLength(1);
     expect(articles[0].imageUrl).toBe("https://s3-images.ctmedia.io/media/zcash-rally.jpg");
     expect(articles[0].link).toBe("https://cointelegraph.com/markets/zcash-highest-price?utm_source=rss_feed");
-    expect(articles[0].id).toBe("https://cointelegraph.com/markets/zcash-highest-price?utm_source=rss_feed");
+    expect(articles[0].id).toBe("https://cointelegraph.com/markets/zcash-highest-price");
     expect(articles[0].summary).toBe("ZEC gained 45% over the past week.");
   });
 
@@ -150,5 +150,58 @@ describe("parseRssFeed", () => {
 
     expect(articles).toHaveLength(1);
     expect(articles[0].link).toBe("https://example.com/valid");
+  });
+
+  it("prefers guid over link for id when guid is present and differs from link", () => {
+    const xml = `<?xml version="1.0"?>
+<rss><channel>
+<item>
+  <title>Guid differs from link</title>
+  <link>https://example.com/article?utm_source=rss_feed</link>
+  <guid isPermaLink="true">https://example.com/article</guid>
+  <pubDate>Mon, 07 Sep 2026 06:00:00 +0000</pubDate>
+  <description>desc</description>
+</item>
+</channel></rss>`;
+
+    const articles = parseRssFeed(xml, "Test Source");
+
+    expect(articles[0].link).toBe("https://example.com/article?utm_source=rss_feed");
+    expect(articles[0].id).toBe("https://example.com/article");
+    expect(articles[0].id).not.toBe(articles[0].link);
+  });
+
+  it("preserves literal comparison operators like '<' and '>' in CDATA description text while still stripping real HTML tags", () => {
+    const xml = `<?xml version="1.0"?>
+<rss><channel>
+<item>
+  <title>Comparison text test</title>
+  <link>https://example.com/comparison-text</link>
+  <pubDate>Mon, 07 Sep 2026 05:00:00 +0000</pubDate>
+  <description><![CDATA[Analysts say RSI < 30 signals oversold conditions, while resistance > $60k caps upside. <p>Full analysis inside.</p>]]></description>
+</item>
+</channel></rss>`;
+
+    const articles = parseRssFeed(xml, "Test Source");
+
+    expect(articles[0].summary).toBe(
+      "Analysts say RSI < 30 signals oversold conditions, while resistance > $60k caps upside. Full analysis inside."
+    );
+  });
+
+  it("falls back to the current time when pubDate is missing or unparsable", () => {
+    const xml = `<?xml version="1.0"?>
+<rss><channel>
+<item>
+  <title>No valid pubDate</title>
+  <link>https://example.com/no-pubdate</link>
+  <pubDate>Not A Real Date</pubDate>
+  <description>desc</description>
+</item>
+</channel></rss>`;
+
+    const articles = parseRssFeed(xml, "Test Source");
+
+    expect(articles[0].publishedAt).toBeGreaterThan(Date.now() - 5000);
   });
 });
