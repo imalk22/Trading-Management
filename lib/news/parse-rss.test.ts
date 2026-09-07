@@ -189,6 +189,24 @@ describe("parseRssFeed", () => {
     );
   });
 
+  it("decodes numeric HTML character references like &#39; in a non-CDATA Decrypt-style description, while still decoding standard entities like &amp;", () => {
+    const xml = `<?xml version="1.0"?>
+<rss><channel>
+<item>
+  <title>Numeric entity decoding test</title>
+  <link>https://decrypt.co/377999/plea-agreement-hearing</link>
+  <pubDate>Mon, 07 Sep 2026 12:00:00 +0000</pubDate>
+  <description>A plea agreement hearing in Lam&#39;s case is set for Tuesday, covering fraud &amp; conspiracy charges.</description>
+</item>
+</channel></rss>`;
+
+    const articles = parseRssFeed(xml, "Decrypt");
+
+    expect(articles[0].summary).toBe(
+      "A plea agreement hearing in Lam's case is set for Tuesday, covering fraud & conspiracy charges."
+    );
+  });
+
   it("falls back to the current time when pubDate is missing or unparsable", () => {
     const xml = `<?xml version="1.0"?>
 <rss><channel>

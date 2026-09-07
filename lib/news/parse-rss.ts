@@ -5,6 +5,7 @@ const parser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: "@_",
   isArray: (name) => name === "item",
+  htmlEntities: true,
 });
 
 interface RawItem {
