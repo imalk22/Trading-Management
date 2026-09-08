@@ -41,7 +41,7 @@ export function TradeForm({ onSubmit }: TradeFormProps) {
     e.preventDefault();
     const parsedEntry = Number(entryPrice);
     const parsedUnits = Number(units);
-    if (!Number.isFinite(parsedEntry) || !Number.isFinite(parsedUnits) || parsedUnits <= 0) return;
+    if (!Number.isFinite(parsedEntry) || parsedEntry <= 0 || !Number.isFinite(parsedUnits) || parsedUnits <= 0) return;
 
     onSubmit({
       symbol,
@@ -79,11 +79,12 @@ export function TradeForm({ onSubmit }: TradeFormProps) {
           </label>
           <div className="flex flex-col gap-1 text-sm">
             Direction
-            <div className="flex gap-2">
+            <div role="group" aria-label="Direction" className="flex gap-2">
               <Button
                 type="button"
                 variant={direction === "long" ? "default" : "outline"}
                 size="sm"
+                aria-pressed={direction === "long"}
                 onClick={() => setDirection("long")}
               >
                 Long
@@ -92,6 +93,7 @@ export function TradeForm({ onSubmit }: TradeFormProps) {
                 type="button"
                 variant={direction === "short" ? "default" : "outline"}
                 size="sm"
+                aria-pressed={direction === "short"}
                 onClick={() => setDirection("short")}
               >
                 Short

@@ -58,4 +58,14 @@ describe("TradeForm", () => {
 
     expect(onSubmit).not.toHaveBeenCalled();
   });
+
+  it("does not submit when entry price is blank even if units is filled in", () => {
+    const onSubmit = vi.fn();
+    render(<TradeForm onSubmit={onSubmit} />);
+
+    fireEvent.change(screen.getByLabelText("Units"), { target: { value: "2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Log Trade" }));
+
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
 });
