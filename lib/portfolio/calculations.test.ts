@@ -90,6 +90,28 @@ describe("computePortfolioStats", () => {
     expect(stats.averageRiskRewardAchieved).toBeCloseTo(2, 5);
   });
 
+  it("excludes a trade whose stop-loss equals its entry price from average risk:reward achieved, avoiding a division by zero", () => {
+    const zeroRiskTrade = makeTrade({
+      id: "1",
+      entryPrice: 100,
+      stopLossPrice: 100,
+      exitPrice: 110,
+      units: 1,
+      closedAt: 1700001000000,
+    });
+    const normalTrade = makeTrade({
+      id: "2",
+      entryPrice: 100,
+      stopLossPrice: 95,
+      exitPrice: 110,
+      units: 1,
+      closedAt: 1700001000000,
+    });
+    const stats = computePortfolioStats([zeroRiskTrade, normalTrade], 10000, {});
+    expect(stats.averageRiskRewardAchieved).toBeCloseTo(2, 5);
+    expect(Number.isFinite(stats.averageRiskRewardAchieved)).toBe(true);
+  });
+
   it("returns a null average risk:reward when no closed trade has a stop-loss set", () => {
     const trade = makeTrade({ stopLossPrice: null, exitPrice: 110, closedAt: 1700001000000 });
     const stats = computePortfolioStats([trade], 10000, {});

@@ -47,7 +47,7 @@ export function computePortfolioStats(
           closedTrades.length) *
         100;
 
-  const tradesWithRisk = closedTrades.filter((t) => t.stopLossPrice !== null);
+  const tradesWithRisk = closedTrades.filter((t) => t.stopLossPrice !== null && t.stopLossPrice !== t.entryPrice);
   const averageRiskRewardAchieved =
     tradesWithRisk.length === 0
       ? null
