@@ -6,6 +6,7 @@ import { groupEventsByLocalDay } from "@/lib/calendar/group-by-day";
 import { CRYPTO_MILESTONES } from "@/lib/calendar/crypto-milestones";
 import { EventRow } from "@/components/calendar/event-row";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { StaleBadge } from "@/components/markets/stale-badge";
@@ -16,7 +17,12 @@ const LOW_IMPACT: EventImpact[] = ["Low", "Holiday"];
 function formatDayHeading(dateKey: string): string {
   const [year, month, day] = dateKey.split("-").map(Number);
   const date = new Date(year, month - 1, day);
-  return new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric" }).format(date);
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }
 
 export default function CalendarPage() {
@@ -45,7 +51,10 @@ export default function CalendarPage() {
         <CardContent className="flex flex-col gap-2">
           {CRYPTO_MILESTONES.map((milestone) => (
             <div key={milestone.id} className="flex flex-col gap-1">
-              <span className="text-sm font-medium">{milestone.title}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{milestone.title}</span>
+                {milestone.isEstimate && <Badge variant="neutral">Estimated</Badge>}
+              </div>
               <span className="text-xs text-muted-foreground">{milestone.description}</span>
             </div>
           ))}
