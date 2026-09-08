@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useMemo } from "react";
 import { useTradeStore, hydrateTradesFromStorage } from "@/lib/portfolio/trade-store";
-import { useAccountSettingsStore } from "@/lib/analyzer/account-settings-store";
+import { useAccountSettingsStore, hydrateAccountSettingsFromStorage } from "@/lib/analyzer/account-settings-store";
 import { useOpenTradePrices } from "@/lib/query/use-open-trade-prices";
 import { computePortfolioStats } from "@/lib/portfolio/calculations";
 import { StatsSummary } from "@/components/portfolio/stats-summary";
@@ -15,6 +15,7 @@ export default function PortfolioPage() {
 
   useLayoutEffect(() => {
     hydrateTradesFromStorage();
+    hydrateAccountSettingsFromStorage();
   }, []);
 
   const closedTrades = useMemo(() => trades.filter((t) => t.closedAt !== null), [trades]);

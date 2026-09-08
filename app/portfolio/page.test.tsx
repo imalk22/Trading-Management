@@ -28,6 +28,7 @@ vi.mock("@/lib/portfolio/trade-store", () => ({
 
 vi.mock("@/lib/analyzer/account-settings-store", () => ({
   useAccountSettingsStore: (selector: (s: unknown) => unknown) => selector({ accountBalance: 10000, riskPercent: 1 }),
+  hydrateAccountSettingsFromStorage: vi.fn(),
 }));
 
 vi.mock("@/lib/query/use-open-trade-prices", () => ({
@@ -56,5 +57,11 @@ describe("PortfolioPage", () => {
     mockUseTradeStore.mockReturnValue({ trades: [openTrade], deleteTrade: mockDeleteTrade });
     render(<PortfolioPage />);
     expect(screen.getByText(/no closed trades yet/i)).toBeInTheDocument();
+  });
+
+  it("calls hydrateAccountSettingsFromStorage on mount so a real persisted account balance is loaded", async () => {
+    const { hydrateAccountSettingsFromStorage } = await import("@/lib/analyzer/account-settings-store");
+    render(<PortfolioPage />);
+    expect(hydrateAccountSettingsFromStorage).toHaveBeenCalled();
   });
 });
