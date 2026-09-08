@@ -21,6 +21,7 @@ describe("TopNav", () => {
       Strategies: "/strategies",
       Analyzer: "/analyzer",
       News: "/news",
+      Calendar: "/calendar",
       Company: "/company",
     };
     for (const [label, href] of Object.entries(expected)) {
