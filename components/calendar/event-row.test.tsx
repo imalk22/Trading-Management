@@ -37,4 +37,18 @@ describe("EventRow", () => {
     expect(screen.getByText(/Forecast: 0.2%/)).toBeInTheDocument();
     expect(screen.getByText(/Previous: 0.3%/)).toBeInTheDocument();
   });
+
+  it("renders only forecast when previous is absent", () => {
+    render(<EventRow event={{ ...baseEvent, forecast: "0.2%", previous: "" }} />);
+    expect(screen.getByText(/Forecast: 0.2%/)).toBeInTheDocument();
+    expect(screen.queryByText(/Previous:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/·/)).not.toBeInTheDocument();
+  });
+
+  it("renders only previous when forecast is absent", () => {
+    render(<EventRow event={{ ...baseEvent, forecast: "", previous: "0.3%" }} />);
+    expect(screen.getByText(/Previous: 0.3%/)).toBeInTheDocument();
+    expect(screen.queryByText(/Forecast:/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/·/)).not.toBeInTheDocument();
+  });
 });

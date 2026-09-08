@@ -6,12 +6,14 @@ export interface EventRowProps {
   event: EconomicEvent;
 }
 
+const timeFormatter = new Intl.DateTimeFormat("en-US", {
+  hour: "numeric",
+  minute: "2-digit",
+  hour12: true,
+});
+
 function formatLocalTime(dateStr: string): string {
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(new Date(dateStr));
+  return timeFormatter.format(new Date(dateStr));
 }
 
 export function EventRow({ event }: EventRowProps) {
