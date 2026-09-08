@@ -56,6 +56,17 @@ describe("TradeRow", () => {
     expect(onClose).toHaveBeenCalledWith("1", 108);
   });
 
+  it("confirms the close when Enter is pressed in the exit-price input", () => {
+    const onClose = vi.fn();
+    render(<TradeRow trade={openTrade} currentPrice={105} onClose={onClose} onDelete={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.change(screen.getByLabelText("Exit price"), { target: { value: "108" } });
+    fireEvent.keyDown(screen.getByLabelText("Exit price"), { key: "Enter" });
+
+    expect(onClose).toHaveBeenCalledWith("1", 108);
+  });
+
   it("calls onDelete with the trade id when Delete is clicked", () => {
     const onDelete = vi.fn();
     render(<TradeRow trade={openTrade} onDelete={onDelete} />);

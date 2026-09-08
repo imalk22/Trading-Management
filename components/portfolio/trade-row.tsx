@@ -59,8 +59,10 @@ export function TradeRow({ trade, currentPrice, onClose, onDelete }: TradeRowPro
               <input
                 type="number"
                 placeholder="Exit price"
+                aria-label="Exit price"
                 value={exitPriceInput}
                 onChange={(e) => setExitPriceInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleConfirmClose()}
                 className="w-24 rounded-lg border border-border bg-muted px-2 py-1 text-xs outline-none"
               />
               <Button size="sm" onClick={handleConfirmClose}>
