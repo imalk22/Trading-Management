@@ -77,4 +77,11 @@ describe("trade store", () => {
     window.localStorage.setItem(TRADE_STORAGE_KEY, "not valid json");
     expect(loadPersistedTrades()).toBeNull();
   });
+
+  it("loadPersistedTrades filters out malformed trade objects while keeping valid ones", () => {
+    const validTrade = makeTrade({ id: "1" });
+    const malformedTrade = { id: "2", symbol: "ETHUSDT" };
+    window.localStorage.setItem(TRADE_STORAGE_KEY, JSON.stringify([validTrade, malformedTrade]));
+    expect(loadPersistedTrades()).toEqual([validTrade]);
+  });
 });
